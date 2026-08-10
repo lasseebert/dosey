@@ -1,18 +1,5 @@
 defmodule Dosey do
   @moduledoc """
-  Documentation for `Dosey`.
+  Dosey keeps the contexts that define the domain and business logic.
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Dosey.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end
