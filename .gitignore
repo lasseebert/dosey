@@ -35,3 +35,8 @@ dosey-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Downloaded Terraform providers. Their versions are in lock files, so we don't need to check them in.
+/terraform/.terraform/
+
+# Terraform secrets
+/terraform/secrets.auto.tfvars
