@@ -80,3 +80,28 @@ resource "digitalocean_firewall" "app" {
     destination_addresses = ["0.0.0.0/0", "::/0"]
   }
 }
+
+resource "digitalocean_domain" "app" {
+  name = "dosey.dk"
+}
+
+resource "digitalocean_record" "app_a" {
+  domain = digitalocean_domain.app.id
+  type   = "A"
+  name   = "@"
+  value  = digitalocean_droplet.app.ipv4_address
+}
+
+resource "digitalocean_record" "app_aaaa" {
+  domain = digitalocean_domain.app.id
+  type   = "AAAA"
+  name   = "@"
+  value  = digitalocean_droplet.app.ipv6_address
+}
+
+resource "digitalocean_record" "www" {
+  domain = digitalocean_domain.app.id
+  type   = "CNAME"
+  name   = "www"
+  value  = "dosey.dk."
+}
