@@ -31,3 +31,8 @@ When implementing a feature, code change, bug fix in the backend, always use TDD
 7. Look for refactoring opportunities and implement them, making sure to run all tests after each change
 
 Untested code is no code. Tests written after the code is no test and thus no code.
+
+## Structs
+
+For internal non-Ecto structs, always use `typedstruct` instead of hand-written
+`defstruct` and `@type t` definitions.

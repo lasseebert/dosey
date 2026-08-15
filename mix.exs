@@ -67,7 +67,13 @@ defmodule Dosey.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+
+      # Password encryption
+      {:bcrypt_elixir, "~> 3.0"},
+
+      # Easily define structs with typed fields
+      {:typed_struct, "~> 0.3.0"}
     ]
   end
 
@@ -87,6 +93,7 @@ defmodule Dosey.MixProject do
         "esbuild dosey --minify",
         "phx.digest"
       ],
+      "ecto.migrate": ["ecto.migrate", "ecto.dump", "dosey.repo.sanitize_structure"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]

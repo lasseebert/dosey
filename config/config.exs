@@ -8,8 +8,11 @@
 import Config
 
 config :dosey,
-  ecto_repos: [Dosey.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  ecto_repos: [Dosey.Repo]
+
+config :dosey, Dosey.Repo,
+  migration_primary_key: [name: :id, type: :binary_id],
+  migration_foreign_key: [type: :binary_id]
 
 # Configure the endpoint
 config :dosey, DoseyWeb.Endpoint,
