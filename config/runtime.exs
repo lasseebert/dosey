@@ -40,6 +40,38 @@ if config_env() == :dev do
 end
 
 if config_env() == :prod do
+  database_url =
+    System.get_env("DATABASE_URL") ||
+      raise """
+      environment variable DATABASE_URL is missing.
+      For example: ecto://USER:PASS@HOST/database
+      """
+
+  maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
+  database_host = URI.parse(database_url).host
+
+  ssl =
+    case System.get_env("DATABASE_CA_CERT_PATH") do
+      nil ->
+        [verify: :verify_none]
+
+      ca_cert_path ->
+        [
+          verify: :verify_peer,
+          cacertfile: ca_cert_path,
+          server_name_indication: String.to_charlist(database_host),
+          customize_hostname_check: [
+            match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+          ]
+        ]
+    end
+
+  config :dosey, Dosey.Repo,
+    url: database_url,
+    pool_size: String.to_integer(System.get_env("POOL_SIZE", "10")),
+    socket_options: maybe_ipv6,
+    ssl: ssl
+
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
   # want to use a different value for prod and you most likely don't want

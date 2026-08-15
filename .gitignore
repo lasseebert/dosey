@@ -41,6 +41,8 @@ npm-debug.log
 
 # Downloaded Terraform providers. Their versions are in lock files, so we don't need to check them in.
 /terraform/.terraform/
+/terraform/*.tfstate
+/terraform/*.tfstate.*
 
 # Terraform secrets
 /terraform/secrets.auto.tfvars

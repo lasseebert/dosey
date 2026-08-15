@@ -8,6 +8,7 @@
 import Config
 
 config :dosey,
+  ecto_repos: [Dosey.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Configure the endpoint

@@ -52,6 +52,13 @@ Create or update the infrastructure:
 terraform apply
 ```
 
+After creating the managed database, copy the private connection URI into
+`/etc/dosey/dosey.env` on the server as `DATABASE_URL`:
+
+```sh
+terraform output -raw database_private_uri
+```
+
 ## Destroy
 
 Destroy the infrastructure managed by this Terraform config:

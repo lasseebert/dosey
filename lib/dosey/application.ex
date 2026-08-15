@@ -8,6 +8,7 @@ defmodule Dosey.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      Dosey.Repo,
       DoseyWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:dosey, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Dosey.PubSub},

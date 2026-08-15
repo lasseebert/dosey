@@ -81,6 +81,25 @@ resource "digitalocean_firewall" "app" {
   }
 }
 
+resource "digitalocean_database_cluster" "postgres" {
+  name       = "${var.project_name}-postgres"
+  engine     = "pg"
+  version    = "18"
+  size       = "db-s-1vcpu-1gb"
+  region     = "fra1"
+  node_count = 1
+  tags       = [var.project_name]
+}
+
+resource "digitalocean_database_firewall" "postgres" {
+  cluster_id = digitalocean_database_cluster.postgres.id
+
+  rule {
+    type  = "droplet"
+    value = digitalocean_droplet.app.id
+  }
+}
+
 resource "digitalocean_domain" "app" {
   name = "dosey.dk"
 }
@@ -104,4 +123,10 @@ resource "digitalocean_record" "www" {
   type   = "CNAME"
   name   = "www"
   value  = "dosey.dk."
+}
+
+output "database_private_uri" {
+  description = "Private PostgreSQL connection URI for DATABASE_URL on the droplet."
+  value       = digitalocean_database_cluster.postgres.private_uri
+  sensitive   = true
 }
