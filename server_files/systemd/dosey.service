@@ -1,0 +1,18 @@
+[Unit]
+Description=Dosey Phoenix application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=dosey
+Group=dosey
+WorkingDirectory=/opt/dosey/current
+EnvironmentFile=/etc/dosey/dosey.env
+ExecStart=/opt/dosey/current/bin/dosey start
+ExecStop=/opt/dosey/current/bin/dosey stop
+Restart=always
+RestartSec=5
+SyslogIdentifier=dosey
+
+[Install]
+WantedBy=multi-user.target
