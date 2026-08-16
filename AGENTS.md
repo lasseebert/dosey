@@ -40,3 +40,10 @@ Untested code is no code. Tests written after the code is no test and thus no co
 
 For internal non-Ecto structs, always use `typedstruct` instead of hand-written
 `defstruct` and `@type t` definitions.
+
+## Ecto schemas and changesets
+
+Ecto schema modules should define database-backed data structures only, and
+methods that operate directly on those structures.
+Changeset functions belong in the context module that owns the workflow, not in
+the schema module.
