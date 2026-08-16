@@ -112,24 +112,30 @@ defmodule DoseyWeb.AppLiveTest do
       assert html =~ "20:15"
       assert html =~ "19:45-20:15"
       refute html =~ ~s(type="time")
+      refute html =~ ~S|pattern="[0-9]{1,2}(:[0-9]{1,2})?"|
     end
 
-    test "updates today's quick summary times inline and shows save confirmation", %{conn: conn} do
+    test "updates today's quick summary times on blur and shows save confirmation", %{conn: conn} do
       {:ok, view, _html} =
         conn
         |> log_in_user()
         |> live(~p"/app")
 
+      assert render(element(view, "#day-2026-08-16-form")) =~ ~s(phx-blur="update-day-field")
+      refute render(element(view, "#day-2026-08-16-form")) =~ ~s(phx-change=)
+
+      view
+      |> element(~s(#day-2026-08-16-form input[name="day[wake_time]"]))
+      |> render_blur(%{"value" => "07:20"})
+
+      view
+      |> element(~s(#day-2026-08-16-form input[name="day[medicine_time]"]))
+      |> render_blur(%{"value" => "07:50"})
+
       html =
         view
-        |> form("#day-2026-08-16-form", %{
-          "day" => %{
-            "wake_time" => "07:20",
-            "medicine_time" => "07:50",
-            "sleep_time" => "20:15"
-          }
-        })
-        |> render_change()
+        |> element(~s(#day-2026-08-16-form input[name="day[sleep_time]"]))
+        |> render_blur(%{"value" => "20:15"})
 
       assert html =~ "Gemt"
       assert day = Diary.get_day(~D[2026-08-16])
@@ -144,16 +150,18 @@ defmodule DoseyWeb.AppLiveTest do
         |> log_in_user()
         |> live(~p"/app")
 
+      view
+      |> element(~s(#day-2026-08-16-form input[name="day[wake_time]"]))
+      |> render_blur(%{"value" => "9"})
+
+      view
+      |> element(~s(#day-2026-08-16-form input[name="day[medicine_time]"]))
+      |> render_blur(%{"value" => "9:00"})
+
       html =
         view
-        |> form("#day-2026-08-16-form", %{
-          "day" => %{
-            "wake_time" => "9",
-            "medicine_time" => "9:00",
-            "sleep_time" => "20"
-          }
-        })
-        |> render_change()
+        |> element(~s(#day-2026-08-16-form input[name="day[sleep_time]"]))
+        |> render_blur(%{"value" => "20"})
 
       assert html =~ ~s(value="9:00")
       assert html =~ ~s(value="20:00")
@@ -227,18 +235,17 @@ defmodule DoseyWeb.AppLiveTest do
 
       yesterday = Diary.get_day(~D[2026-08-15])
       [event] = yesterday.events
+      assert render(element(view, "#event-#{event.id}-form")) =~ ~s(phx-blur="update-event-field")
+      refute render(element(view, "#event-#{event.id}-form")) =~ ~r/<form[^>]+phx-change=/
+
+      view
+      |> element(~s(#event-#{event.id}-form input[name="event[text]"]))
+      |> render_blur(%{"value" => "Spiste yoghurt"})
 
       html =
         view
-        |> form("#event-#{event.id}-form", %{
-          "event" => %{
-            "event_type" => "meal",
-            "text" => "Spiste yoghurt",
-            "started_at_time" => "08:10",
-            "ended_at_time" => ""
-          }
-        })
-        |> render_change()
+        |> element(~s(#event-#{event.id}-form input[name="event[started_at_time]"]))
+        |> render_blur(%{"value" => "08:10"})
 
       assert html =~ "Spiste yoghurt"
 

@@ -207,7 +207,6 @@ defmodule DoseyWeb.AppLive do
     <form
       id={"day-#{Date.to_iso8601(@day.date)}-form"}
       class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3"
-      phx-change="update-day"
     >
       <input type="hidden" name="date" value={Date.to_iso8601(@day.date)} />
       <.time_input
@@ -259,7 +258,6 @@ defmodule DoseyWeb.AppLive do
           name="event[started_at_time]"
           type="text"
           inputmode="numeric"
-          pattern="[0-9]{1,2}(:[0-9]{1,2})?"
           placeholder="tt:mm"
           data-time-input
           class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
@@ -268,7 +266,6 @@ defmodule DoseyWeb.AppLive do
           name="event[ended_at_time]"
           type="text"
           inputmode="numeric"
-          pattern="[0-9]{1,2}(:[0-9]{1,2})?"
           placeholder="tt:mm"
           data-time-input
           class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
@@ -315,21 +312,28 @@ defmodule DoseyWeb.AppLive do
     <form
       id={"event-#{@event.id}-form"}
       class="grid grid-cols-1 gap-2 rounded-md bg-[#f5f8f6] p-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto_auto]"
-      phx-change="update-event"
     >
       <input type="hidden" name="event_id" value={@event.id} />
-      <.event_type_select name="event[event_type]" value={@event.event_type} />
+      <.event_type_select
+        name="event[event_type]"
+        value={@event.event_type}
+        phx_change="update-event-field"
+        phx_value_id={@event.id}
+        phx_value_field="event_type"
+      />
       <input
         name="event[text]"
         type="text"
         value={@event.text}
+        phx-blur="update-event-field"
+        phx-value-id={@event.id}
+        phx-value-field="text"
         class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
       />
       <input
         name="event[started_at_time]"
         type="text"
         inputmode="numeric"
-        pattern="[0-9]{1,2}(:[0-9]{1,2})?"
         placeholder="tt:mm"
         value={format_time_input(@event.started_at_time)}
         data-time-input
@@ -342,7 +346,6 @@ defmodule DoseyWeb.AppLive do
         name="event[ended_at_time]"
         type="text"
         inputmode="numeric"
-        pattern="[0-9]{1,2}(:[0-9]{1,2})?"
         placeholder="tt:mm"
         value={format_time_input(@event.ended_at_time)}
         data-time-input
@@ -373,7 +376,6 @@ defmodule DoseyWeb.AppLive do
         name={@name}
         type="text"
         inputmode="numeric"
-        pattern="[0-9]{1,2}(:[0-9]{1,2})?"
         placeholder="tt:mm"
         value={format_time_input(@value)}
         data-time-input
@@ -387,8 +389,20 @@ defmodule DoseyWeb.AppLive do
   end
 
   defp event_type_select(assigns) do
+    assigns =
+      assigns
+      |> assign_new(:phx_change, fn -> nil end)
+      |> assign_new(:phx_value_id, fn -> nil end)
+      |> assign_new(:phx_value_field, fn -> nil end)
+
     ~H"""
-    <select name={@name} class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm">
+    <select
+      name={@name}
+      phx-change={@phx_change}
+      phx-value-id={@phx_value_id}
+      phx-value-field={@phx_value_field}
+      class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
+    >
       <option :for={type <- Event.event_types()} value={type} selected={@value == type}>
         {event_type_label(type)}
       </option>
