@@ -11,7 +11,7 @@ defmodule DoseyWeb.AppControllerTest do
       assert redirected_to(conn) == ~p"/login"
     end
 
-    test "renders the placeholder app page for authenticated users", %{conn: conn} do
+    test "renders the diary app page for authenticated users", %{conn: conn} do
       user = user_fixture()
 
       conn =
@@ -22,7 +22,8 @@ defmodule DoseyWeb.AppControllerTest do
       response = html_response(conn, 200)
 
       assert response =~ "Dosey"
-      assert response =~ "Her kommer appen."
+      assert response =~ "Dagbog"
+      assert response =~ "Seneste syv dage"
       assert response =~ "Log ud"
     end
   end

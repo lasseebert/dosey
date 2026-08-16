@@ -229,6 +229,42 @@ defmodule Dosey.DiaryTest do
     end
   end
 
+  describe "get_or_create_day/1" do
+    test "returns an existing day for the date" do
+      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+
+      assert {:ok, existing_day} = Diary.get_or_create_day(~D[2026-08-16])
+      assert existing_day.id == day.id
+    end
+
+    test "creates a day when the date does not exist" do
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
+
+      assert day.date == ~D[2026-08-16]
+      assert Diary.get_day(~D[2026-08-16]).id == day.id
+    end
+
+    test "returns the existing day when the date already exists" do
+      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+
+      assert {:ok, existing_day} = Diary.get_or_create_day(~D[2026-08-16])
+      assert existing_day.id == day.id
+    end
+  end
+
+  describe "list_days/2" do
+    test "returns existing days in the calendar range ordered newest first with events preloaded" do
+      assert {:ok, older_day} = Diary.create_day(~D[2026-08-14])
+      assert {:ok, newer_day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, event} = Diary.add_event(older_day, %{event_type: :meal})
+
+      assert [returned_newer_day, returned_older_day] = Diary.list_days(~D[2026-08-16], 3)
+      assert returned_newer_day.id == newer_day.id
+      assert returned_older_day.id == older_day.id
+      assert Enum.map(returned_older_day.events, & &1.id) == [event.id]
+    end
+  end
+
   describe "update_event/2" do
     test "updates event type, text, and times" do
       assert {:ok, day} = Diary.create_day(~D[2026-08-16])

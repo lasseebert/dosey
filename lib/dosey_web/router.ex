@@ -43,7 +43,7 @@ defmodule DoseyWeb.Router do
   scope "/", DoseyWeb do
     pipe_through [:browser, :authenticated]
 
-    get "/app", AppController, :index
+    live "/app", AppLive
   end
 
   # Other scopes may use custom stacks.

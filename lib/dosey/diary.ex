@@ -21,6 +21,28 @@ defmodule Dosey.Diary do
 
   def get_day(_date), do: nil
 
+  @spec get_or_create_day(Date.t()) :: {:ok, Day.t()} | {:error, Changeset.t()}
+  def get_or_create_day(%Date{} = date) do
+    %Day{}
+    |> create_day_changeset(date)
+    |> Repo.insert(on_conflict: :nothing, conflict_target: :date)
+    |> case do
+      {:ok, _day} -> {:ok, get_day(date)}
+      {:error, %Changeset{} = changeset} -> {:error, changeset}
+    end
+  end
+
+  @spec list_days(Date.t(), pos_integer()) :: [Day.t()]
+  def list_days(%Date{} = date, count) when is_integer(count) and count > 0 do
+    oldest_date = Date.add(date, -count + 1)
+
+    Day
+    |> where([day], day.date >= ^oldest_date and day.date <= ^date)
+    |> order_by([day], desc: day.date)
+    |> preload(events: ^events_query())
+    |> Repo.all()
+  end
+
   @spec create_day(Date.t() | nil) :: {:ok, Day.t()} | {:error, Changeset.t()}
   def create_day(date) when is_struct(date, Date) or is_nil(date) do
     %Day{}
