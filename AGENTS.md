@@ -15,6 +15,10 @@ The architecture should favor fast iteration, a small operational footprint,
 and clear server-side domain logic. A separate API or native client can be added
 later if the project grows to need it.
 
+## Language
+
+All user-facing application text must be written in Danish.
+
 ## Development workflow for agents
 
 When implementing a feature, code change, bug fix in the backend, always use TDD:
