@@ -14,6 +14,8 @@ config :dosey, Dosey.Repo,
   migration_primary_key: [name: :id, type: :binary_id],
   migration_foreign_key: [type: :binary_id]
 
+config :dosey, :session_max_age, 60 * 60 * 24 * 30
+
 # Configure the endpoint
 config :dosey, DoseyWeb.Endpoint,
   url: [host: "localhost"],

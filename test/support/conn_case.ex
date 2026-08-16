@@ -31,7 +31,8 @@ defmodule DoseyWeb.ConnCase do
     end
   end
 
-  setup _tags do
+  setup tags do
+    Dosey.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end

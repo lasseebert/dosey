@@ -72,6 +72,31 @@ defmodule Dosey.AccountsTest do
     end
   end
 
+  describe "get_user/1" do
+    test "returns the user for an existing id" do
+      assert {:ok, registered_user} =
+               Accounts.register_user(
+                 UserRegistration.new(
+                   email: "parent@example.com",
+                   password: "correct horse battery staple"
+                 )
+               )
+
+      assert user = Accounts.get_user(registered_user.id)
+      assert user.id == registered_user.id
+      assert user.email == registered_user.email
+    end
+
+    test "returns nil for an unknown id" do
+      assert Accounts.get_user(Ecto.UUID.generate()) == nil
+    end
+
+    test "returns nil for invalid ids" do
+      assert Accounts.get_user(nil) == nil
+      assert Accounts.get_user("not-a-uuid") == nil
+    end
+  end
+
   describe "authenticate_user_by_email_and_password/2" do
     test "returns the user for a valid email and password" do
       assert {:ok, registered_user} =

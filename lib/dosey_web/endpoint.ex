@@ -4,10 +4,14 @@ defmodule DoseyWeb.Endpoint do
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
+  # The salts are stable key-derivation inputs and do not need to be secret.
+  # The production secret is the runtime SECRET_KEY_BASE value.
   @session_options [
     store: :cookie,
     key: "_dosey_key",
-    signing_salt: "OT0MFaoB",
+    signing_salt: "dosey cookie signing salt",
+    encryption_salt: "dosey cookie encryption salt",
+    max_age: Application.compile_env!(:dosey, :session_max_age),
     same_site: "Lax"
   ]
 

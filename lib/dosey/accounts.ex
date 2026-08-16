@@ -11,6 +11,16 @@ defmodule Dosey.Accounts do
   alias Dosey.Repo
   alias Ecto.Changeset
 
+  @spec get_user(String.t()) :: User.t() | nil
+  def get_user(id) when is_binary(id) do
+    case Ecto.UUID.cast(id) do
+      {:ok, id} -> Repo.get(User, id)
+      :error -> nil
+    end
+  end
+
+  def get_user(_id), do: nil
+
   @spec register_user(UserRegistration.t()) :: {:ok, User.t()} | {:error, Changeset.t()}
   def register_user(%UserRegistration{} = registration) do
     %User{}

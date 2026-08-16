@@ -1,0 +1,29 @@
+<Layouts.flash_group flash={@flash} />
+
+<main class="min-h-screen bg-[#f7faf8] text-[#172526]">
+  <section class="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-6 sm:px-8 lg:px-12">
+    <div class="flex items-center justify-between">
+      <a href={~p"/app"} class="flex items-center gap-3">
+        <img src={~p"/images/dosey-logo.png"} alt="Dosey logo" class="h-11 w-11 rounded-lg" />
+        <span class="text-xl font-semibold">Dosey</span>
+      </a>
+
+      <form action={~p"/logout"} method="post">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+        <button
+          type="submit"
+          class="rounded-lg border border-[#cbd8d2] bg-white px-4 py-2 text-sm font-medium text-[#344845] hover:border-[#92c7bc] hover:text-[#0b6f6b]"
+        >
+          Log ud
+        </button>
+      </form>
+    </div>
+
+    <div class="flex flex-1 items-center">
+      <div>
+        <h1 class="text-4xl font-semibold tracking-normal text-[#102021] sm:text-5xl">Dosey</h1>
+        <p class="mt-4 text-lg leading-8 text-[#4f5f5c]">Her kommer appen.</p>
+      </div>
+    </div>
+  </section>
+</main>
