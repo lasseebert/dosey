@@ -138,6 +138,32 @@ defmodule DoseyWeb.AppLiveTest do
       assert day.sleep_time == ~T[20:15:00]
     end
 
+    test "accepts loose time inputs and normalizes them after saving", %{conn: conn} do
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html =
+        view
+        |> form("#day-2026-08-16-form", %{
+          "day" => %{
+            "wake_time" => "9",
+            "medicine_time" => "9:00",
+            "sleep_time" => "20"
+          }
+        })
+        |> render_change()
+
+      assert html =~ ~s(value="09:00")
+      assert html =~ ~s(value="20:00")
+
+      assert day = Diary.get_day(~D[2026-08-16])
+      assert day.wake_time == ~T[09:00:00]
+      assert day.medicine_time == ~T[09:00:00]
+      assert day.sleep_time == ~T[20:00:00]
+    end
+
     test "adds, edits, and deletes events for yesterday", %{conn: conn} do
       {:ok, view, _html} =
         conn
@@ -182,6 +208,33 @@ defmodule DoseyWeb.AppLiveTest do
 
       assert html =~ "Gemt"
       assert Diary.get_day(~D[2026-08-15]).events == []
+    end
+
+    test "accepts loose event time inputs and normalizes them after saving", %{conn: conn} do
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html =
+        view
+        |> form("#event-new-2026-08-15-form", %{
+          "event" => %{
+            "event_type" => "meal",
+            "text" => "Morgenmad",
+            "started_at_time" => "9",
+            "ended_at_time" => "9:30"
+          }
+        })
+        |> render_submit()
+
+      assert html =~ ~s(value="09:00")
+      assert html =~ ~s(value="09:30")
+
+      yesterday = Diary.get_day(~D[2026-08-15])
+      [event] = yesterday.events
+      assert event.started_at_time == ~T[09:00:00]
+      assert event.ended_at_time == ~T[09:30:00]
     end
   end
 

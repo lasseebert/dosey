@@ -49,7 +49,8 @@ defmodule DoseyWeb.AppLive do
 
     with true <- editable?(socket, date),
          %Day{} = day <- Diary.get_day(date),
-         {:ok, _day} <- Diary.update_day(day, normalize_empty_values(attrs)) do
+         {:ok, attrs} <- normalize_day_attrs(attrs),
+         {:ok, _day} <- Diary.update_day(day, attrs) do
       {:noreply, socket |> mark_saved() |> load_days()}
     else
       _error -> {:noreply, assign(socket, :error_message, "Dagen kunne ikke gemmes.")}
@@ -61,7 +62,8 @@ defmodule DoseyWeb.AppLive do
 
     with true <- editable?(socket, date),
          %Day{} = day <- Diary.get_day(date),
-         {:ok, _event} <- Diary.add_event(day, normalize_empty_values(attrs)) do
+         {:ok, attrs} <- normalize_event_attrs(attrs),
+         {:ok, _event} <- Diary.add_event(day, attrs) do
       {:noreply, socket |> mark_saved() |> load_days()}
     else
       _error -> {:noreply, assign(socket, :error_message, "Hændelsen kunne ikke gemmes.")}
@@ -74,7 +76,8 @@ defmodule DoseyWeb.AppLive do
     with %Event{} = event <- event,
          %Day{} = day <- find_day(socket.assigns.days, event.day_id),
          true <- editable?(socket, day.date),
-         {:ok, _event} <- Diary.update_event(event, normalize_empty_values(attrs)) do
+         {:ok, attrs} <- normalize_event_attrs(attrs),
+         {:ok, _event} <- Diary.update_event(event, attrs) do
       {:noreply, socket |> mark_saved() |> load_days()}
     else
       _error -> {:noreply, assign(socket, :error_message, "Hændelsen kunne ikke gemmes.")}
@@ -394,11 +397,50 @@ defmodule DoseyWeb.AppLive do
     |> Enum.find(&(&1.id == event_id))
   end
 
+  defp normalize_day_attrs(attrs) do
+    normalize_time_attrs(attrs, ["wake_time", "medicine_time", "sleep_time"])
+  end
+
+  defp normalize_event_attrs(attrs) do
+    normalize_time_attrs(attrs, ["started_at_time", "ended_at_time"])
+  end
+
+  defp normalize_time_attrs(attrs, time_keys) do
+    Enum.reduce_while(time_keys, {:ok, normalize_empty_values(attrs)}, fn key, {:ok, attrs} ->
+      case parse_time(Map.get(attrs, key)) do
+        {:ok, value} -> {:cont, {:ok, Map.put(attrs, key, value)}}
+        :error -> {:halt, :error}
+      end
+    end)
+  end
+
   defp normalize_empty_values(attrs) do
     Map.new(attrs, fn
       {key, ""} -> {key, nil}
       pair -> pair
     end)
+  end
+
+  defp parse_time(nil), do: {:ok, nil}
+  defp parse_time(%Time{} = time), do: {:ok, time}
+
+  defp parse_time(value) when is_binary(value) do
+    cond do
+      Regex.match?(~r/^\d{1,2}$/, value) ->
+        parse_time("#{value}:00")
+
+      Regex.match?(~r/^\d{1,2}:\d{1,2}$/, value) ->
+        [hour, minute] = String.split(value, ":")
+        Time.new(parse_integer(hour), parse_integer(minute), 0)
+
+      true ->
+        :error
+    end
+  end
+
+  defp parse_integer(value) do
+    {integer, ""} = Integer.parse(value)
+    integer
   end
 
   defp day_title(date, today, _yesterday) when date == today, do: "I dag"
