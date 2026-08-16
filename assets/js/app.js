@@ -45,6 +45,33 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
+const normalizeLooseTime = (value) => {
+  const trimmed = value.trim()
+  const hourOnly = trimmed.match(/^(\d{1,2})$/)
+  const hourAndMinute = trimmed.match(/^(\d{1,2}):(\d{1,2})$/)
+
+  if (hourOnly) {
+    const hour = Number(hourOnly[1])
+    return hour >= 0 && hour <= 23 ? `${hour}:00` : value
+  }
+
+  if (hourAndMinute) {
+    const hour = Number(hourAndMinute[1])
+    const minute = Number(hourAndMinute[2])
+    return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59
+      ? `${hour}:${String(minute).padStart(2, "0")}`
+      : value
+  }
+
+  return value
+}
+
+document.addEventListener("blur", (event) => {
+  if (event.target.matches("[data-time-input]")) {
+    event.target.value = normalizeLooseTime(event.target.value)
+  }
+}, true)
+
 // The lines below enable quality of life phoenix_live_reload
 // development features:
 //

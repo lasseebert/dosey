@@ -155,13 +155,54 @@ defmodule DoseyWeb.AppLiveTest do
         })
         |> render_change()
 
-      assert html =~ ~s(value="09:00")
+      assert html =~ ~s(value="9:00")
       assert html =~ ~s(value="20:00")
 
       assert day = Diary.get_day(~D[2026-08-16])
       assert day.wake_time == ~T[09:00:00]
       assert day.medicine_time == ~T[09:00:00]
       assert day.sleep_time == ~T[20:00:00]
+    end
+
+    test "normalizes a day time input after it loses focus", %{conn: conn} do
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html =
+        view
+        |> element(~s(#day-2026-08-16-form input[name="day[wake_time]"]))
+        |> render_blur(%{"value" => "9"})
+
+      assert html =~ ~s(name="day[wake_time]")
+      assert html =~ ~s(value="9:00")
+
+      assert day = Diary.get_day(~D[2026-08-16])
+      assert day.wake_time == ~T[09:00:00]
+    end
+
+    test "saving one day time field does not clear other day time fields", %{conn: conn} do
+      {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
+
+      assert {:ok, _day} =
+               Diary.update_day(day, %{
+                 wake_time: ~T[09:00:00],
+                 medicine_time: ~T[10:00:00]
+               })
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      view
+      |> element(~s(#day-2026-08-16-form input[name="day[medicine_time]"]))
+      |> render_blur(%{"value" => "10:30"})
+
+      assert day = Diary.get_day(~D[2026-08-16])
+      assert day.wake_time == ~T[09:00:00]
+      assert day.medicine_time == ~T[10:30:00]
     end
 
     test "adds, edits, and deletes events for yesterday", %{conn: conn} do
@@ -228,13 +269,35 @@ defmodule DoseyWeb.AppLiveTest do
         })
         |> render_submit()
 
-      assert html =~ ~s(value="09:00")
-      assert html =~ ~s(value="09:30")
+      assert html =~ ~s(value="9:00")
+      assert html =~ ~s(value="9:30")
 
       yesterday = Diary.get_day(~D[2026-08-15])
       [event] = yesterday.events
       assert event.started_at_time == ~T[09:00:00]
       assert event.ended_at_time == ~T[09:30:00]
+    end
+
+    test "normalizes an event time input after it loses focus", %{conn: conn} do
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-15])
+      assert {:ok, event} = Diary.add_event(day, %{event_type: :meal})
+
+      {:ok, view, html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      assert html =~ "event-#{event.id}-form"
+
+      html =
+        view
+        |> element(~s(#event-#{event.id}-form input[name="event[started_at_time]"]))
+        |> render_blur(%{"value" => "9:30"})
+
+      assert html =~ ~s(value="9:30")
+
+      [updated_event] = Diary.get_day(~D[2026-08-15]).events
+      assert updated_event.started_at_time == ~T[09:30:00]
     end
   end
 

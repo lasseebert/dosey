@@ -57,6 +57,23 @@ defmodule DoseyWeb.AppLive do
     end
   end
 
+  def handle_event(
+        "update-day-field",
+        %{"date" => date_string, "field" => field, "value" => value},
+        socket
+      ) do
+    date = Date.from_iso8601!(date_string)
+
+    with true <- editable?(socket, date),
+         %Day{} = day <- Diary.get_day(date),
+         {:ok, attrs} <- normalize_day_attrs(%{field => value}),
+         {:ok, _day} <- Diary.update_day(day, attrs) do
+      {:noreply, socket |> mark_saved() |> load_days()}
+    else
+      _error -> {:noreply, assign(socket, :error_message, "Dagen kunne ikke gemmes.")}
+    end
+  end
+
   def handle_event("add-event", %{"date" => date_string, "event" => attrs}, socket) do
     date = Date.from_iso8601!(date_string)
 
@@ -64,6 +81,24 @@ defmodule DoseyWeb.AppLive do
          %Day{} = day <- Diary.get_day(date),
          {:ok, attrs} <- normalize_event_attrs(attrs),
          {:ok, _event} <- Diary.add_event(day, attrs) do
+      {:noreply, socket |> mark_saved() |> load_days()}
+    else
+      _error -> {:noreply, assign(socket, :error_message, "Hændelsen kunne ikke gemmes.")}
+    end
+  end
+
+  def handle_event(
+        "update-event-field",
+        %{"id" => id, "field" => field, "value" => value},
+        socket
+      ) do
+    event = find_event(socket.assigns.days, id)
+
+    with %Event{} = event <- event,
+         %Day{} = day <- find_day(socket.assigns.days, event.day_id),
+         true <- editable?(socket, day.date),
+         {:ok, attrs} <- normalize_event_attrs(%{field => value}),
+         {:ok, _event} <- Diary.update_event(event, attrs) do
       {:noreply, socket |> mark_saved() |> load_days()}
     else
       _error -> {:noreply, assign(socket, :error_message, "Hændelsen kunne ikke gemmes.")}
@@ -175,9 +210,30 @@ defmodule DoseyWeb.AppLive do
       phx-change="update-day"
     >
       <input type="hidden" name="date" value={Date.to_iso8601(@day.date)} />
-      <.time_input label="Vågnede" name="day[wake_time]" value={@day.wake_time} />
-      <.time_input label="Medicin" name="day[medicine_time]" value={@day.medicine_time} />
-      <.time_input label="Sov" name="day[sleep_time]" value={@day.sleep_time} />
+      <.time_input
+        label="Vågnede"
+        name="day[wake_time]"
+        value={@day.wake_time}
+        phx_blur="update-day-field"
+        phx_value_date={Date.to_iso8601(@day.date)}
+        phx_value_field="wake_time"
+      />
+      <.time_input
+        label="Medicin"
+        name="day[medicine_time]"
+        value={@day.medicine_time}
+        phx_blur="update-day-field"
+        phx_value_date={Date.to_iso8601(@day.date)}
+        phx_value_field="medicine_time"
+      />
+      <.time_input
+        label="Sov"
+        name="day[sleep_time]"
+        value={@day.sleep_time}
+        phx_blur="update-day-field"
+        phx_value_date={Date.to_iso8601(@day.date)}
+        phx_value_field="sleep_time"
+      />
     </form>
 
     <section class="mt-5">
@@ -203,16 +259,18 @@ defmodule DoseyWeb.AppLive do
           name="event[started_at_time]"
           type="text"
           inputmode="numeric"
-          pattern="[0-2][0-9]:[0-5][0-9]"
+          pattern="[0-9]{1,2}(:[0-9]{1,2})?"
           placeholder="tt:mm"
+          data-time-input
           class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
         />
         <input
           name="event[ended_at_time]"
           type="text"
           inputmode="numeric"
-          pattern="[0-2][0-9]:[0-5][0-9]"
+          pattern="[0-9]{1,2}(:[0-9]{1,2})?"
           placeholder="tt:mm"
+          data-time-input
           class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
         />
         <button
@@ -271,18 +329,26 @@ defmodule DoseyWeb.AppLive do
         name="event[started_at_time]"
         type="text"
         inputmode="numeric"
-        pattern="[0-2][0-9]:[0-5][0-9]"
+        pattern="[0-9]{1,2}(:[0-9]{1,2})?"
         placeholder="tt:mm"
         value={format_time_input(@event.started_at_time)}
+        data-time-input
+        phx-blur="update-event-field"
+        phx-value-id={@event.id}
+        phx-value-field="started_at_time"
         class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
       />
       <input
         name="event[ended_at_time]"
         type="text"
         inputmode="numeric"
-        pattern="[0-2][0-9]:[0-5][0-9]"
+        pattern="[0-9]{1,2}(:[0-9]{1,2})?"
         placeholder="tt:mm"
         value={format_time_input(@event.ended_at_time)}
+        data-time-input
+        phx-blur="update-event-field"
+        phx-value-id={@event.id}
+        phx-value-field="ended_at_time"
         class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
       />
       <button
@@ -307,9 +373,13 @@ defmodule DoseyWeb.AppLive do
         name={@name}
         type="text"
         inputmode="numeric"
-        pattern="[0-2][0-9]:[0-5][0-9]"
+        pattern="[0-9]{1,2}(:[0-9]{1,2})?"
         placeholder="tt:mm"
         value={format_time_input(@value)}
+        data-time-input
+        phx-blur={@phx_blur}
+        phx-value-date={@phx_value_date}
+        phx-value-field={@phx_value_field}
         class="w-full rounded-md border border-[#cbd8d2] px-3 py-2"
       />
     </label>
@@ -406,10 +476,16 @@ defmodule DoseyWeb.AppLive do
   end
 
   defp normalize_time_attrs(attrs, time_keys) do
-    Enum.reduce_while(time_keys, {:ok, normalize_empty_values(attrs)}, fn key, {:ok, attrs} ->
-      case parse_time(Map.get(attrs, key)) do
-        {:ok, value} -> {:cont, {:ok, Map.put(attrs, key, value)}}
-        :error -> {:halt, :error}
+    attrs = normalize_empty_values(attrs)
+
+    Enum.reduce_while(time_keys, {:ok, attrs}, fn key, {:ok, attrs} ->
+      if Map.has_key?(attrs, key) do
+        case parse_time(Map.get(attrs, key)) do
+          {:ok, value} -> {:cont, {:ok, Map.put(attrs, key, value)}}
+          :error -> {:halt, :error}
+        end
+      else
+        {:cont, {:ok, attrs}}
       end
     end)
   end
@@ -468,7 +544,13 @@ defmodule DoseyWeb.AppLive do
   defp format_time(%Time{} = time), do: Calendar.strftime(time, "%H:%M")
 
   defp format_time_input(nil), do: nil
-  defp format_time_input(%Time{} = time), do: Calendar.strftime(time, "%H:%M")
+
+  defp format_time_input(%Time{} = time) do
+    "#{time.hour}:#{pad_minute(time.minute)}"
+  end
+
+  defp pad_minute(minute) when minute < 10, do: "0#{minute}"
+  defp pad_minute(minute), do: Integer.to_string(minute)
 
   defp event_range(%Event{started_at_time: nil, ended_at_time: nil}), do: ""
 
