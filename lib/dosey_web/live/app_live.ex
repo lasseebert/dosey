@@ -29,6 +29,7 @@ defmodule DoseyWeb.AppLive do
        |> assign(:today, today)
        |> assign(:yesterday, yesterday)
        |> assign(:saved_at, nil)
+       |> assign(:saved_status_ref, nil)
        |> assign(:error_message, nil)
        |> load_days()}
     else
@@ -39,7 +40,21 @@ defmodule DoseyWeb.AppLive do
          |> assign(:yesterday, yesterday)
          |> assign(:days, [])
          |> assign(:saved_at, nil)
+         |> assign(:saved_status_ref, nil)
          |> assign(:error_message, "Dagen kunne ikke oprettes.")}
+    end
+  end
+
+  @impl true
+  def handle_info(:clear_saved_status, socket) do
+    {:noreply, clear_saved_status(socket)}
+  end
+
+  def handle_info({:clear_saved_status, ref}, socket) do
+    if socket.assigns.saved_status_ref == ref do
+      {:noreply, clear_saved_status(socket)}
+    else
+      {:noreply, socket}
     end
   end
 
@@ -138,6 +153,14 @@ defmodule DoseyWeb.AppLive do
     <Layouts.flash_group flash={@flash} />
 
     <main class="min-h-screen bg-[#f7faf8] text-[#172526]">
+      <p
+        :if={@saved_at}
+        id="save-status"
+        class="fixed right-4 top-4 z-50 rounded-md bg-[#dff3e9] px-4 py-3 text-sm font-medium text-[#17624f] shadow-lg"
+      >
+        Gemt {@saved_at}
+      </p>
+
       <section class="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-4 sm:px-8 lg:px-12">
         <header class="flex items-center justify-between gap-4">
           <a href={~p"/app"} class="flex items-center gap-3">
@@ -154,17 +177,11 @@ defmodule DoseyWeb.AppLive do
           </.link>
         </header>
 
-        <div class="mt-7 flex items-end justify-between gap-4">
+        <div class="mt-7">
           <div>
             <h1 class="text-3xl font-semibold tracking-normal text-[#102021]">Dagbog</h1>
             <p class="mt-1 text-sm text-[#53635f]">Seneste syv dage</p>
           </div>
-          <p
-            :if={@saved_at}
-            class="rounded-md bg-[#dff3e9] px-3 py-2 text-sm font-medium text-[#17624f]"
-          >
-            Gemt {@saved_at}
-          </p>
         </div>
 
         <p :if={@error_message} class="mt-4 rounded-md bg-[#ffe8e2] px-3 py-2 text-sm text-[#8a2d1b]">
@@ -463,9 +480,19 @@ defmodule DoseyWeb.AppLive do
   end
 
   defp mark_saved(socket) do
+    ref = make_ref()
+    Process.send_after(self(), {:clear_saved_status, ref}, 5_000)
+
     socket
     |> assign(:saved_at, Calendar.strftime(Time.utc_now(), "%H:%M:%S"))
+    |> assign(:saved_status_ref, ref)
     |> assign(:error_message, nil)
+  end
+
+  defp clear_saved_status(socket) do
+    socket
+    |> assign(:saved_at, nil)
+    |> assign(:saved_status_ref, nil)
   end
 
   defp editable?(socket, date),

@@ -138,10 +138,32 @@ defmodule DoseyWeb.AppLiveTest do
         |> render_blur(%{"value" => "20:15"})
 
       assert html =~ "Gemt"
+      assert html =~ ~s(id="save-status")
+      assert html =~ "fixed"
+      assert html =~ "top-4"
       assert day = Diary.get_day(~D[2026-08-16])
       assert day.wake_time == ~T[07:20:00]
       assert day.medicine_time == ~T[07:50:00]
       assert day.sleep_time == ~T[20:15:00]
+    end
+
+    test "hides the save confirmation after five seconds", %{conn: conn} do
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html =
+        view
+        |> element(~s(#day-2026-08-16-form input[name="day[wake_time]"]))
+        |> render_blur(%{"value" => "7:20"})
+
+      assert html =~ ~s(id="save-status")
+
+      send(view.pid, :clear_saved_status)
+      html = render(view)
+
+      refute html =~ ~s(id="save-status")
     end
 
     test "accepts loose time inputs and normalizes them after saving", %{conn: conn} do
