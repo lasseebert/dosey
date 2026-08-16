@@ -140,7 +140,7 @@ defmodule DoseyWeb.AppLiveTest do
       assert html =~ "Gemt"
       assert html =~ ~s(id="save-status")
       assert html =~ "fixed"
-      assert html =~ "top-4"
+      assert html =~ "safe-area-inset-top"
       assert day = Diary.get_day(~D[2026-08-16])
       assert day.wake_time == ~T[07:20:00]
       assert day.medicine_time == ~T[07:50:00]

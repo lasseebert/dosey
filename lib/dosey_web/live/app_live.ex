@@ -156,7 +156,8 @@ defmodule DoseyWeb.AppLive do
       <p
         :if={@saved_at}
         id="save-status"
-        class="fixed right-4 top-4 z-50 rounded-md bg-[#dff3e9] px-4 py-3 text-sm font-medium text-[#17624f] shadow-lg"
+        class="fixed left-4 right-4 z-50 mx-auto max-w-sm rounded-md bg-[#dff3e9] px-4 py-3 text-center text-sm font-medium text-[#17624f] shadow-lg"
+        style="top: calc(env(safe-area-inset-top, 0px) + 1rem);"
       >
         Gemt {@saved_at}
       </p>
