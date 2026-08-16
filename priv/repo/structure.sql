@@ -150,10 +150,10 @@ CREATE INDEX diary_events_day_id_index ON public.diary_events USING btree (day_i
 
 
 --
--- Name: diary_events_day_id_started_at_time_inserted_at_index; Type: INDEX; Schema: public; Owner: -
+-- Name: diary_events_day_id_inserted_at_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX diary_events_day_id_started_at_time_inserted_at_index ON public.diary_events USING btree (day_id, started_at_time, inserted_at);
+CREATE INDEX diary_events_day_id_inserted_at_index ON public.diary_events USING btree (day_id, inserted_at);
 
 
 --
@@ -177,3 +177,4 @@ ALTER TABLE ONLY public.diary_events
 
 INSERT INTO public."schema_migrations" (version) VALUES (20260815120000);
 INSERT INTO public."schema_migrations" (version) VALUES (20260816120000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260816130000);

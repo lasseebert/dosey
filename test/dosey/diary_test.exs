@@ -194,22 +194,22 @@ defmodule Dosey.DiaryTest do
   end
 
   describe "get_day/1" do
-    test "returns a day with events ordered by start time and untimed events last" do
+    test "returns a day with events ordered by insertion time" do
       assert {:ok, day} = Diary.create_day(~D[2026-08-16])
 
-      assert {:ok, untimed_event} =
+      assert {:ok, first_event} =
                Diary.add_event(day, %{
                  event_type: :other,
                  text: "A note without a specific time"
                })
 
-      assert {:ok, later_event} =
+      assert {:ok, second_event} =
                Diary.add_event(day, %{
                  event_type: :put_to_bed,
                  started_at_time: ~T[20:00:00]
                })
 
-      assert {:ok, earlier_event} =
+      assert {:ok, third_event} =
                Diary.add_event(day, %{
                  event_type: :wake_attempt,
                  started_at_time: ~T[07:00:00]
@@ -218,9 +218,9 @@ defmodule Dosey.DiaryTest do
       assert reloaded_day = Diary.get_day(~D[2026-08-16])
 
       assert Enum.map(reloaded_day.events, & &1.id) == [
-               earlier_event.id,
-               later_event.id,
-               untimed_event.id
+               first_event.id,
+               second_event.id,
+               third_event.id
              ]
     end
 

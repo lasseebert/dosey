@@ -103,11 +103,7 @@ defmodule Dosey.Diary do
 
   defp events_query do
     from(event in Event,
-      order_by: [
-        asc: fragment("? IS NULL", event.started_at_time),
-        asc: event.started_at_time,
-        asc: event.inserted_at
-      ]
+      order_by: [asc: event.inserted_at]
     )
   end
 end
