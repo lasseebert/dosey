@@ -546,7 +546,7 @@ defmodule DoseyWeb.AppLive do
     Process.send_after(self(), {:clear_saved_status, ref}, 5_000)
 
     socket
-    |> assign(:saved_at, Calendar.strftime(Time.utc_now(), "%H:%M:%S"))
+    |> assign(:saved_at, Calendar.strftime(current_copenhagen_time(), "%H:%M:%S"))
     |> assign(:saved_status_ref, ref)
     |> assign(:error_message, nil)
   end

@@ -194,6 +194,24 @@ defmodule DoseyWeb.AppLiveTest do
       assert day.wake_time == ~T[07:45:00]
     end
 
+    test "shows the save confirmation time in Copenhagen time", %{conn: conn} do
+      Application.delete_env(:dosey, :today)
+      Application.put_env(:dosey, :now, fn -> ~U[2026-08-16 05:45:00Z] end)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html =
+        view
+        |> element("#day-2026-08-16-wake_time-set-now")
+        |> render_click()
+
+      assert html =~ "Gemt 07:45:00"
+      refute html =~ "Gemt 05:45:00"
+    end
+
     test "updates today's quick summary times on blur and shows save confirmation", %{conn: conn} do
       {:ok, today} = Diary.get_or_create_day(~D[2026-08-16])
 
