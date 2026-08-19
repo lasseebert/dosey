@@ -89,6 +89,23 @@ defmodule DoseyWeb.AppLive do
     end
   end
 
+  def handle_event(
+        "set-day-time-now",
+        %{"date" => date_string, "field" => field},
+        socket
+      ) do
+    date = Date.from_iso8601!(date_string)
+
+    with true <- editable?(socket, date),
+         true <- field in ["wake_time", "medicine_time", "sleep_time"],
+         %Day{} = day <- Diary.get_day(date),
+         {:ok, _day} <- Diary.update_day(day, %{field => current_copenhagen_time()}) do
+      {:noreply, socket |> mark_saved() |> load_days()}
+    else
+      _error -> {:noreply, assign(socket, :error_message, "Dagen kunne ikke gemmes.")}
+    end
+  end
+
   def handle_event("add-event", %{"date" => date_string, "event" => attrs}, socket) do
     date = Date.from_iso8601!(date_string)
 
@@ -227,25 +244,31 @@ defmodule DoseyWeb.AppLive do
       class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3"
     >
       <input type="hidden" name="date" value={Date.to_iso8601(@day.date)} />
-      <.time_input
+      <.day_time_editor
         label="Vågnede"
         name="day[wake_time]"
+        date={@day.date}
+        field="wake_time"
         value={@day.wake_time}
         phx_blur="update-day-field"
         phx_value_date={Date.to_iso8601(@day.date)}
         phx_value_field="wake_time"
       />
-      <.time_input
+      <.day_time_editor
         label="Medicin"
         name="day[medicine_time]"
+        date={@day.date}
+        field="medicine_time"
         value={@day.medicine_time}
         phx_blur="update-day-field"
         phx_value_date={Date.to_iso8601(@day.date)}
         phx_value_field="medicine_time"
       />
-      <.time_input
+      <.day_time_editor
         label="Sov"
         name="day[sleep_time]"
+        date={@day.date}
+        field="sleep_time"
         value={@day.sleep_time}
         phx_blur="update-day-field"
         phx_value_date={Date.to_iso8601(@day.date)}
@@ -386,23 +409,52 @@ defmodule DoseyWeb.AppLive do
     """
   end
 
-  defp time_input(assigns) do
+  defp day_time_editor(assigns) do
+    assigns =
+      assigns
+      |> assign(:date_string, Date.to_iso8601(assigns.date))
+      |> assign(:input_id, "day-#{Date.to_iso8601(assigns.date)}-#{assigns.field}-input")
+      |> assign(:trigger_id, "day-#{Date.to_iso8601(assigns.date)}-#{assigns.field}-trigger")
+      |> assign(:set_now_id, "day-#{Date.to_iso8601(assigns.date)}-#{assigns.field}-set-now")
+
     ~H"""
-    <label class="text-sm">
+    <div class="text-sm" data-day-time-editor={@field}>
       <span class="mb-1 block font-medium text-[#344845]">{@label}</span>
-      <input
-        name={@name}
-        type="text"
-        inputmode="numeric"
-        placeholder="tt:mm"
-        value={format_time_input(@value)}
-        data-time-input
-        phx-blur={@phx_blur}
-        phx-value-date={@phx_value_date}
-        phx-value-field={@phx_value_field}
-        class="w-full rounded-md border border-[#cbd8d2] px-3 py-2"
-      />
-    </label>
+      <details :if={@value} class="group relative">
+        <summary
+          id={@trigger_id}
+          class="block cursor-pointer list-none rounded-md bg-[#f5f8f6] px-3 py-2 font-medium text-[#172526] marker:hidden hover:bg-[#eef3f1]"
+        >
+          {format_time(@value)}
+        </summary>
+        <div class="absolute left-0 top-full z-20 mt-2 w-40 rounded-md border border-[#cbd8d2] bg-white p-3 shadow-lg">
+          <label for={@input_id} class="sr-only">{@label}</label>
+          <input
+            id={@input_id}
+            name={@name}
+            type="text"
+            inputmode="numeric"
+            value={format_time_input(@value)}
+            data-time-input
+            phx-blur={@phx_blur}
+            phx-value-date={@phx_value_date}
+            phx-value-field={@phx_value_field}
+            class="w-full rounded-md border border-[#cbd8d2] px-3 py-2"
+          />
+        </div>
+      </details>
+      <button
+        :if={!@value}
+        id={@set_now_id}
+        type="button"
+        phx-click="set-day-time-now"
+        phx-value-date={@date_string}
+        phx-value-field={@field}
+        class="w-full rounded-md bg-[#f5f8f6] px-3 py-2 text-left font-medium text-[#0b6f6b] hover:bg-[#eef3f1]"
+      >
+        Sæt nu
+      </button>
+    </div>
     """
   end
 
@@ -455,6 +507,15 @@ defmodule DoseyWeb.AppLive do
     now
     |> DateTime.add(copenhagen_utc_offset_seconds(now), :second)
     |> DateTime.to_date()
+  end
+
+  defp current_copenhagen_time do
+    now = Application.get_env(:dosey, :now, fn -> DateTime.utc_now() end).()
+
+    now
+    |> DateTime.add(copenhagen_utc_offset_seconds(now), :second)
+    |> DateTime.to_time()
+    |> Time.truncate(:second)
   end
 
   defp copenhagen_utc_offset_seconds(%DateTime{} = utc_datetime) do

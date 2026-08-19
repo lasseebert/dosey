@@ -115,7 +115,95 @@ defmodule DoseyWeb.AppLiveTest do
       refute html =~ ~S|pattern="[0-9]{1,2}(:[0-9]{1,2})?"|
     end
 
+    test "renders editable day times as timestamp editors", %{conn: conn} do
+      assert {:ok, today} = Diary.get_or_create_day(~D[2026-08-16])
+
+      assert {:ok, _today} =
+               Diary.update_day(today, %{
+                 wake_time: ~T[07:20:00],
+                 medicine_time: ~T[13:05:00],
+                 sleep_time: ~T[20:15:00]
+               })
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html = render(element(view, "#day-2026-08-16-form"))
+
+      assert html =~ ~s(data-day-time-editor="wake_time")
+      assert html =~ ~s(id="day-2026-08-16-wake_time-trigger")
+
+      assert html =~
+               ~r/<(?:button|summary)[^>]*id="day-2026-08-16-wake_time-trigger"[^>]*>\s*07:20\s*<\/(?:button|summary)>/
+
+      assert html =~ ~s(name="day[wake_time]")
+      assert html =~ ~s(value="7:20")
+
+      assert html =~ ~s(data-day-time-editor="medicine_time")
+
+      assert html =~
+               ~r/<(?:button|summary)[^>]*id="day-2026-08-16-medicine_time-trigger"[^>]*>\s*13:05\s*<\/(?:button|summary)>/
+
+      assert html =~ ~s(data-day-time-editor="sleep_time")
+
+      assert html =~
+               ~r/<(?:button|summary)[^>]*id="day-2026-08-16-sleep_time-trigger"[^>]*>\s*20:15\s*<\/(?:button|summary)>/
+
+      refute html =~ ~s(placeholder="tt:mm")
+    end
+
+    test "renders empty editable day times as a set-now action", %{conn: conn} do
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html = render(element(view, "#day-2026-08-16-form"))
+
+      assert html =~ ~s(id="day-2026-08-16-wake_time-set-now")
+      assert html =~ ~s(phx-click="set-day-time-now")
+      assert html =~ ~s(phx-value-date="2026-08-16")
+      assert html =~ ~s(phx-value-field="wake_time")
+
+      assert html =~
+               ~r/<button[^>]*id="day-2026-08-16-wake_time-set-now"[^>]*>\s*Sæt nu\s*<\/button>/
+
+      refute html =~ ~s(id="day-2026-08-16-wake_time-trigger")
+    end
+
+    test "sets an empty editable day time to the current Copenhagen time", %{conn: conn} do
+      Application.delete_env(:dosey, :today)
+      Application.put_env(:dosey, :now, fn -> ~U[2026-08-16 05:45:00Z] end)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html =
+        view
+        |> element("#day-2026-08-16-wake_time-set-now")
+        |> render_click()
+
+      assert html =~ "07:45"
+      assert html =~ "Gemt"
+
+      assert day = Diary.get_day(~D[2026-08-16])
+      assert day.wake_time == ~T[07:45:00]
+    end
+
     test "updates today's quick summary times on blur and shows save confirmation", %{conn: conn} do
+      {:ok, today} = Diary.get_or_create_day(~D[2026-08-16])
+
+      assert {:ok, _today} =
+               Diary.update_day(today, %{
+                 wake_time: ~T[07:00:00],
+                 medicine_time: ~T[07:30:00],
+                 sleep_time: ~T[20:00:00]
+               })
+
       {:ok, view, _html} =
         conn
         |> log_in_user()
@@ -148,6 +236,8 @@ defmodule DoseyWeb.AppLiveTest do
     end
 
     test "hides the save confirmation after five seconds", %{conn: conn} do
+      Application.put_env(:dosey, :now, fn -> ~U[2026-08-16 05:20:00Z] end)
+
       {:ok, view, _html} =
         conn
         |> log_in_user()
@@ -155,8 +245,8 @@ defmodule DoseyWeb.AppLiveTest do
 
       html =
         view
-        |> element(~s(#day-2026-08-16-form input[name="day[wake_time]"]))
-        |> render_blur(%{"value" => "7:20"})
+        |> element("#day-2026-08-16-wake_time-set-now")
+        |> render_click()
 
       assert html =~ ~s(id="save-status")
 
@@ -167,6 +257,15 @@ defmodule DoseyWeb.AppLiveTest do
     end
 
     test "accepts loose time inputs and normalizes them after saving", %{conn: conn} do
+      {:ok, today} = Diary.get_or_create_day(~D[2026-08-16])
+
+      assert {:ok, _today} =
+               Diary.update_day(today, %{
+                 wake_time: ~T[08:00:00],
+                 medicine_time: ~T[08:30:00],
+                 sleep_time: ~T[19:30:00]
+               })
+
       {:ok, view, _html} =
         conn
         |> log_in_user()
@@ -195,6 +294,9 @@ defmodule DoseyWeb.AppLiveTest do
     end
 
     test "normalizes a day time input after it loses focus", %{conn: conn} do
+      {:ok, today} = Diary.get_or_create_day(~D[2026-08-16])
+      assert {:ok, _today} = Diary.update_day(today, %{wake_time: ~T[08:00:00]})
+
       {:ok, view, _html} =
         conn
         |> log_in_user()
