@@ -173,6 +173,18 @@ defmodule DoseyWeb.AppLiveTest do
       refute html =~ ~s(id="day-2026-08-16-wake_time-trigger")
     end
 
+    test "renders editable day times in a three-column row like read-only days", %{conn: conn} do
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html = render(element(view, "#day-2026-08-16-form"))
+
+      assert html =~ ~s(class="mt-4 grid grid-cols-3 gap-3 text-sm")
+      refute html =~ ~s(grid-cols-1)
+    end
+
     test "sets an empty editable day time to the current Copenhagen time", %{conn: conn} do
       Application.delete_env(:dosey, :today)
       Application.put_env(:dosey, :now, fn -> ~U[2026-08-16 05:45:00Z] end)

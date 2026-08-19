@@ -241,7 +241,7 @@ defmodule DoseyWeb.AppLive do
     ~H"""
     <form
       id={"day-#{Date.to_iso8601(@day.date)}-form"}
-      class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3"
+      class="mt-4 grid grid-cols-3 gap-3 text-sm"
     >
       <input type="hidden" name="date" value={Date.to_iso8601(@day.date)} />
       <.day_time_editor
