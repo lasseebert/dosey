@@ -416,6 +416,7 @@ defmodule DoseyWeb.AppLive do
       |> assign(:input_id, "day-#{Date.to_iso8601(assigns.date)}-#{assigns.field}-input")
       |> assign(:trigger_id, "day-#{Date.to_iso8601(assigns.date)}-#{assigns.field}-trigger")
       |> assign(:set_now_id, "day-#{Date.to_iso8601(assigns.date)}-#{assigns.field}-set-now")
+      |> assign(:popup_position_class, day_time_popup_position_class(assigns.field))
 
     ~H"""
     <div class="text-sm" data-day-time-editor={@field}>
@@ -427,7 +428,10 @@ defmodule DoseyWeb.AppLive do
         >
           {format_time(@value)}
         </summary>
-        <div class="absolute left-0 top-full z-20 mt-2 w-40 rounded-md border border-[#cbd8d2] bg-white p-3 shadow-lg">
+        <div class={[
+          "absolute top-full z-20 mt-2 w-40 rounded-md border border-[#cbd8d2] bg-white p-3 shadow-lg",
+          @popup_position_class
+        ]}>
           <label for={@input_id} class="sr-only">{@label}</label>
           <input
             id={@input_id}
@@ -479,6 +483,9 @@ defmodule DoseyWeb.AppLive do
     </select>
     """
   end
+
+  defp day_time_popup_position_class("sleep_time"), do: "right-0"
+  defp day_time_popup_position_class(_field), do: "left-0"
 
   defp load_days(socket) do
     today = socket.assigns.today
