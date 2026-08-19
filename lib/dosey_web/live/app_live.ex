@@ -420,7 +420,7 @@ defmodule DoseyWeb.AppLive do
     ~H"""
     <div class="text-sm" data-day-time-editor={@field}>
       <span class="mb-1 block font-medium text-[#344845]">{@label}</span>
-      <details :if={@value} class="group relative">
+      <details :if={@value} class="group relative" data-day-time-popup>
         <summary
           id={@trigger_id}
           class="block cursor-pointer list-none rounded-md bg-[#f5f8f6] px-3 py-2 font-medium text-[#172526] marker:hidden hover:bg-[#eef3f1]"

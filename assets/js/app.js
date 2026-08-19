@@ -72,6 +72,44 @@ document.addEventListener("blur", (event) => {
   }
 }, true)
 
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && event.target.matches("[data-time-input]")) {
+    const popup = event.target.closest("[data-day-time-popup]")
+
+    if (popup) {
+      event.preventDefault()
+      popup.removeAttribute("open")
+      event.target.blur()
+    }
+  }
+}, true)
+
+document.addEventListener("toggle", (event) => {
+  if (event.target.matches("[data-day-time-popup]") && event.target.open) {
+    const input = event.target.querySelector("[data-time-input]")
+
+    if (input) {
+      input.focus()
+      const cursorPosition = input.value.length
+      input.setSelectionRange(cursorPosition, cursorPosition)
+    }
+  }
+}, true)
+
+document.addEventListener("pointerdown", (event) => {
+  document.querySelectorAll("[data-day-time-popup][open]").forEach((popup) => {
+    if (!popup.contains(event.target)) {
+      const input = popup.querySelector("[data-time-input]")
+
+      if (input) {
+        input.blur()
+      }
+
+      popup.removeAttribute("open")
+    }
+  })
+}, true)
+
 // The lines below enable quality of life phoenix_live_reload
 // development features:
 //
