@@ -185,6 +185,93 @@ defmodule DoseyWeb.AppLiveTest do
       refute html =~ ~s(grid-cols-1)
     end
 
+    test "renders quick-add buttons for events and keeps them out of the new event dropdown", %{
+      conn: conn
+    } do
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html = render(element(view, "#day-2026-08-16"))
+
+      assert html =~ ~s(id="event-new-2026-08-16-wake_attempt-quick-add")
+      assert html =~ ~s(id="event-new-2026-08-16-put_to_bed-quick-add")
+      assert html =~ ~s(phx-click="quick-add-event")
+      assert html =~ ~s(phx-value-date="2026-08-16")
+      assert html =~ ~s(phx-value-event-type="wake_attempt")
+      assert html =~ ~s(phx-value-event-type="put_to_bed")
+
+      new_event_form = render(element(view, "#event-new-2026-08-16-form"))
+
+      refute new_event_form =~ ~s(value="wake_attempt")
+      refute new_event_form =~ ~s(value="put_to_bed")
+      assert new_event_form =~ ~s(value="meal")
+    end
+
+    test "quick-add creates an event with the current Copenhagen time", %{conn: conn} do
+      Application.delete_env(:dosey, :today)
+      Application.put_env(:dosey, :now, fn -> ~U[2026-08-16 05:45:00Z] end)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html =
+        view
+        |> element("#event-new-2026-08-16-wake_attempt-quick-add")
+        |> render_click()
+
+      assert html =~ "Vækning"
+      assert html =~ "07:45"
+      assert html =~ "Gemt"
+
+      today = Diary.get_day(~D[2026-08-16])
+      [event] = today.events
+      assert event.event_type == :wake_attempt
+      assert event.started_at_time == ~T[07:45:00]
+      assert event.ended_at_time == nil
+      assert event.text == nil
+    end
+
+    test "renders quick-added event types like other events when editable and read-only", %{
+      conn: conn
+    } do
+      assert {:ok, yesterday} = Diary.get_or_create_day(~D[2026-08-15])
+
+      assert {:ok, event} =
+               Diary.add_event(yesterday, %{
+                 event_type: :put_to_bed,
+                 started_at_time: ~T[19:45:00]
+               })
+
+      assert {:ok, older_day} = Diary.create_day(~D[2026-08-14])
+
+      assert {:ok, _older_event} =
+               Diary.add_event(older_day, %{
+                 event_type: :wake_attempt,
+                 started_at_time: ~T[07:05:00]
+               })
+
+      {:ok, view, html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      editable_event = render(element(view, "#event-#{event.id}-form"))
+
+      assert editable_event =~ ~s(name="event[event_type]")
+      assert editable_event =~ ~s(value="put_to_bed")
+      assert editable_event =~ ~s(name="event[text]")
+      assert editable_event =~ ~s(name="event[started_at_time]")
+      assert editable_event =~ ~s(name="event[ended_at_time]")
+      assert editable_event =~ ~s(value="19:45")
+
+      assert html =~ "Vækning"
+      assert html =~ "07:05"
+    end
+
     test "aligns the rightmost editable day time popup inside the viewport", %{conn: conn} do
       assert {:ok, today} = Diary.get_or_create_day(~D[2026-08-16])
       assert {:ok, _today} = Diary.update_day(today, %{sleep_time: ~T[20:15:00]})

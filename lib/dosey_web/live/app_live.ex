@@ -120,6 +120,27 @@ defmodule DoseyWeb.AppLive do
   end
 
   def handle_event(
+        "quick-add-event",
+        %{"date" => date_string, "event-type" => event_type},
+        socket
+      ) do
+    date = Date.from_iso8601!(date_string)
+
+    with true <- editable?(socket, date),
+         true <- event_type in Enum.map(quick_add_event_types(), &Atom.to_string/1),
+         %Day{} = day <- Diary.get_day(date),
+         {:ok, _event} <-
+           Diary.add_event(day, %{
+             event_type: String.to_existing_atom(event_type),
+             started_at_time: current_copenhagen_time()
+           }) do
+      {:noreply, socket |> mark_saved() |> load_days()}
+    else
+      _error -> {:noreply, assign(socket, :error_message, "Hændelsen kunne ikke gemmes.")}
+    end
+  end
+
+  def handle_event(
         "update-event-field",
         %{"id" => id, "field" => field, "value" => value},
         socket
@@ -278,6 +299,19 @@ defmodule DoseyWeb.AppLive do
 
     <section class="mt-5">
       <h3 class="text-sm font-semibold text-[#344845]">Hændelser</h3>
+      <div class="mt-2 flex flex-wrap gap-2">
+        <button
+          :for={type <- quick_add_event_types()}
+          id={"event-new-#{Date.to_iso8601(@day.date)}-#{type}-quick-add"}
+          type="button"
+          phx-click="quick-add-event"
+          phx-value-date={Date.to_iso8601(@day.date)}
+          phx-value-event-type={type}
+          class="rounded-md bg-[#f5f8f6] px-3 py-2 text-sm font-medium text-[#0b6f6b] hover:bg-[#eef3f1]"
+        >
+          {event_type_label(type)}
+        </button>
+      </div>
       <div class="mt-2 flex flex-col gap-2">
         <.event_form :for={event <- @day.events} event={event} />
       </div>
@@ -288,7 +322,7 @@ defmodule DoseyWeb.AppLive do
         phx-submit="add-event"
       >
         <input type="hidden" name="date" value={Date.to_iso8601(@day.date)} />
-        <.event_type_select name="event[event_type]" value={nil} />
+        <.event_type_select name="event[event_type]" value={nil} event_types={manual_event_types()} />
         <input
           name="event[text]"
           type="text"
@@ -465,6 +499,7 @@ defmodule DoseyWeb.AppLive do
   defp event_type_select(assigns) do
     assigns =
       assigns
+      |> assign_new(:event_types, fn -> Event.event_types() end)
       |> assign_new(:phx_change, fn -> nil end)
       |> assign_new(:phx_value_id, fn -> nil end)
       |> assign_new(:phx_value_field, fn -> nil end)
@@ -477,12 +512,16 @@ defmodule DoseyWeb.AppLive do
       phx-value-field={@phx_value_field}
       class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
     >
-      <option :for={type <- Event.event_types()} value={type} selected={@value == type}>
+      <option :for={type <- @event_types} value={type} selected={@value == type}>
         {event_type_label(type)}
       </option>
     </select>
     """
   end
+
+  defp quick_add_event_types, do: [:wake_attempt, :put_to_bed]
+
+  defp manual_event_types, do: Event.event_types() -- quick_add_event_types()
 
   defp day_time_popup_position_class("sleep_time"), do: "right-0"
   defp day_time_popup_position_class(_field), do: "left-0"
