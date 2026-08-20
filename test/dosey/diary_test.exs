@@ -166,6 +166,25 @@ defmodule Dosey.DiaryTest do
       assert event.ended_at_time == nil
     end
 
+    test "adds school and activity events" do
+      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+
+      assert {:ok, school_event} =
+               Diary.add_event(day, %{
+                 event_type: :school,
+                 text: "God aflevering"
+               })
+
+      assert {:ok, activity_event} =
+               Diary.add_event(day, %{
+                 event_type: :activity,
+                 text: "Fodbold"
+               })
+
+      assert school_event.event_type == :school
+      assert activity_event.event_type == :activity
+    end
+
     test "rejects unknown event types" do
       assert {:ok, day} = Diary.create_day(~D[2026-08-16])
 

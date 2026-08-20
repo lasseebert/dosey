@@ -376,14 +376,12 @@ defmodule DoseyWeb.AppLive do
       <form
         id={"event-#{@event.id}-form"}
         class="absolute left-0 top-full z-20 mt-2 grid w-full min-w-72 grid-cols-1 gap-2 rounded-md border border-[#cbd8d2] bg-white p-3 shadow-lg sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto_auto]"
+        phx-change="update-event"
       >
         <input type="hidden" name="event_id" value={@event.id} />
         <.event_type_select
           name="event[event_type]"
           value={@event.event_type}
-          phx_change="update-event-field"
-          phx_value_id={@event.id}
-          phx_value_field="event_type"
           data_event_input
         />
         <input
@@ -706,6 +704,8 @@ defmodule DoseyWeb.AppLive do
   defp event_type_label(:social), do: "Socialt"
   defp event_type_label(:meltdown), do: "Nedsmeltning"
   defp event_type_label(:meal), do: "Måltid"
+  defp event_type_label(:school), do: "Skole"
+  defp event_type_label(:activity), do: "Aktivitet"
   defp event_type_label(:wake_attempt), do: "Vækning"
   defp event_type_label(:put_to_bed), do: "Putning"
   defp event_type_label(:other), do: "Andet"

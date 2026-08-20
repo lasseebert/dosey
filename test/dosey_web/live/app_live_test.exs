@@ -216,6 +216,8 @@ defmodule DoseyWeb.AppLiveTest do
 
       refute new_event_form =~ ~s(value="wake_attempt")
       refute new_event_form =~ ~s(value="put_to_bed")
+      assert new_event_form =~ ~r/<option[^>]*value="school"[^>]*>\s*Skole\s*<\/option>/
+      assert new_event_form =~ ~r/<option[^>]*value="activity"[^>]*>\s*Aktivitet\s*<\/option>/
       assert new_event_form =~ ~s(value="meal")
     end
 
@@ -614,7 +616,9 @@ defmodule DoseyWeb.AppLiveTest do
       yesterday = Diary.get_day(~D[2026-08-15])
       [event] = yesterday.events
       assert render(element(view, "#event-#{event.id}-form")) =~ ~s(phx-blur="update-event-field")
-      refute render(element(view, "#event-#{event.id}-form")) =~ ~r/<form[^>]+phx-change=/
+
+      assert render(element(view, "#event-#{event.id}-form")) =~
+               ~r/<form[^>]+phx-change="update-event"/
 
       view
       |> element(~s(#event-#{event.id}-form input[name="event[text]"]))
@@ -717,6 +721,39 @@ defmodule DoseyWeb.AppLiveTest do
 
       [updated_event] = Diary.get_day(~D[2026-08-15]).events
       assert updated_event.started_at_time == ~T[09:30:00]
+    end
+
+    test "updates an existing event type from the event form", %{conn: conn} do
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-15])
+      assert {:ok, event} = Diary.add_event(day, %{event_type: :meal})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html =
+        view
+        |> form("#event-#{event.id}-form", %{
+          "event_id" => event.id,
+          "event" => %{"event_type" => "school"}
+        })
+        |> render_change()
+
+      assert html =~ ~s(id="event-#{event.id}-form")
+
+      [updated_event] = Diary.get_day(~D[2026-08-15]).events
+      assert updated_event.event_type == :school
+
+      view
+      |> form("#event-#{event.id}-form", %{
+        "event_id" => event.id,
+        "event" => %{"event_type" => "activity"}
+      })
+      |> render_change()
+
+      [updated_event] = Diary.get_day(~D[2026-08-15]).events
+      assert updated_event.event_type == :activity
     end
   end
 

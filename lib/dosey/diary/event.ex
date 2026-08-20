@@ -7,6 +7,8 @@ defmodule Dosey.Diary.Event do
     :social,
     :meltdown,
     :meal,
+    :school,
+    :activity,
     :wake_attempt,
     :put_to_bed,
     :other

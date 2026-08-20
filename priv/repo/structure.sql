@@ -41,7 +41,9 @@ CREATE TYPE public.diary_event_type AS ENUM (
     'meal',
     'wake_attempt',
     'put_to_bed',
-    'other'
+    'other',
+    'school',
+    'activity'
 );
 
 
@@ -178,3 +180,4 @@ ALTER TABLE ONLY public.diary_events
 INSERT INTO public."schema_migrations" (version) VALUES (20260815120000);
 INSERT INTO public."schema_migrations" (version) VALUES (20260816120000);
 INSERT INTO public."schema_migrations" (version) VALUES (20260816130000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260820120000);
