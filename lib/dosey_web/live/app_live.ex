@@ -384,62 +384,78 @@ defmodule DoseyWeb.AppLive do
 
   defp event_form(assigns) do
     ~H"""
-    <form
-      id={"event-#{@event.id}-form"}
-      class="grid grid-cols-1 gap-2 rounded-md bg-[#f5f8f6] p-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto_auto]"
-    >
-      <input type="hidden" name="event_id" value={@event.id} />
-      <.event_type_select
-        name="event[event_type]"
-        value={@event.event_type}
-        phx_change="update-event-field"
-        phx_value_id={@event.id}
-        phx_value_field="event_type"
-      />
-      <input
-        name="event[text]"
-        type="text"
-        value={@event.text}
-        phx-blur="update-event-field"
-        phx-value-id={@event.id}
-        phx-value-field="text"
-        class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
-      />
-      <input
-        name="event[started_at_time]"
-        type="text"
-        inputmode="numeric"
-        placeholder="tt:mm"
-        value={format_time_input(@event.started_at_time)}
-        data-time-input
-        phx-blur="update-event-field"
-        phx-value-id={@event.id}
-        phx-value-field="started_at_time"
-        class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
-      />
-      <input
-        name="event[ended_at_time]"
-        type="text"
-        inputmode="numeric"
-        placeholder="tt:mm"
-        value={format_time_input(@event.ended_at_time)}
-        data-time-input
-        phx-blur="update-event-field"
-        phx-value-id={@event.id}
-        phx-value-field="ended_at_time"
-        class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
-      />
-      <button
-        id={"event-#{@event.id}-delete"}
-        type="button"
-        phx-click="delete-event"
-        phx-value-id={@event.id}
-        data-confirm="Er du sikker på, at du vil slette hændelsen?"
-        class="rounded-md border border-[#cbd8d2] bg-white px-3 py-2 text-sm font-medium text-[#8a2d1b]"
+    <details id={"event-#{@event.id}-popup"} class="group relative" data-event-popup>
+      <summary
+        id={"event-#{@event.id}-summary"}
+        class="cursor-pointer list-none rounded-md bg-[#f5f8f6] px-3 py-2 text-sm marker:hidden hover:bg-[#eef3f1]"
       >
-        Slet
-      </button>
-    </form>
+        <span class="font-medium">{event_type_label(@event.event_type)}</span>
+        <span class="text-[#60706c]">{event_range(@event)}</span>
+        <p :if={@event.text} class="mt-1">{@event.text}</p>
+      </summary>
+
+      <form
+        id={"event-#{@event.id}-form"}
+        class="absolute left-0 top-full z-20 mt-2 grid w-full min-w-72 grid-cols-1 gap-2 rounded-md border border-[#cbd8d2] bg-white p-3 shadow-lg sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto_auto]"
+      >
+        <input type="hidden" name="event_id" value={@event.id} />
+        <.event_type_select
+          name="event[event_type]"
+          value={@event.event_type}
+          phx_change="update-event-field"
+          phx_value_id={@event.id}
+          phx_value_field="event_type"
+          data_event_input
+        />
+        <input
+          name="event[text]"
+          type="text"
+          value={@event.text}
+          data-event-input
+          phx-blur="update-event-field"
+          phx-value-id={@event.id}
+          phx-value-field="text"
+          class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
+        />
+        <input
+          name="event[started_at_time]"
+          type="text"
+          inputmode="numeric"
+          placeholder="tt:mm"
+          value={format_time_input(@event.started_at_time)}
+          data-time-input
+          data-event-input
+          phx-blur="update-event-field"
+          phx-value-id={@event.id}
+          phx-value-field="started_at_time"
+          class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
+        />
+        <input
+          name="event[ended_at_time]"
+          type="text"
+          inputmode="numeric"
+          placeholder="tt:mm"
+          value={format_time_input(@event.ended_at_time)}
+          data-time-input
+          data-event-input
+          phx-blur="update-event-field"
+          phx-value-id={@event.id}
+          phx-value-field="ended_at_time"
+          class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
+        />
+        <button
+          id={"event-#{@event.id}-delete"}
+          type="button"
+          aria-label="Slet hændelse"
+          phx-click="delete-event"
+          phx-value-id={@event.id}
+          data-confirm="Er du sikker på, at du vil slette hændelsen?"
+          class="inline-flex size-10 items-center justify-center rounded-md border border-[#cbd8d2] bg-white text-[#8a2d1b] hover:bg-[#fff3ef]"
+        >
+          <.icon name="hero-trash" class="size-5" />
+        </button>
+      </form>
+    </details>
     """
   end
 
@@ -503,6 +519,7 @@ defmodule DoseyWeb.AppLive do
       |> assign_new(:phx_change, fn -> nil end)
       |> assign_new(:phx_value_id, fn -> nil end)
       |> assign_new(:phx_value_field, fn -> nil end)
+      |> assign_new(:data_event_input, fn -> false end)
 
     ~H"""
     <select
@@ -510,6 +527,7 @@ defmodule DoseyWeb.AppLive do
       phx-change={@phx_change}
       phx-value-id={@phx_value_id}
       phx-value-field={@phx_value_field}
+      data-event-input={@data_event_input}
       class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
     >
       <option :for={type <- @event_types} value={type} selected={@value == type}>

@@ -272,6 +272,52 @@ defmodule DoseyWeb.AppLiveTest do
       assert html =~ "07:05"
     end
 
+    test "renders editable events as compact rows that open editor popups", %{conn: conn} do
+      assert {:ok, yesterday} = Diary.get_or_create_day(~D[2026-08-15])
+
+      assert {:ok, event} =
+               Diary.add_event(yesterday, %{
+                 event_type: :meal,
+                 text: "Spiste havregrød",
+                 started_at_time: ~T[08:00:00]
+               })
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html = render(element(view, "#event-#{event.id}-popup"))
+
+      assert html =~ ~s(data-event-popup)
+      assert html =~ ~s(id="event-#{event.id}-summary")
+      assert html =~ "Måltid"
+      assert html =~ "08:00"
+      assert html =~ "Spiste havregrød"
+      assert html =~ ~s(id="event-#{event.id}-form")
+      assert html =~ ~s(phx-blur="update-event-field")
+      assert html =~ ~s(name="event[text]")
+
+      refute html =~ ~r/^<form[^>]*id="event-#{event.id}-form"/
+    end
+
+    test "renders editable event delete as a confirmed garbage icon button", %{conn: conn} do
+      assert {:ok, yesterday} = Diary.get_or_create_day(~D[2026-08-15])
+      assert {:ok, event} = Diary.add_event(yesterday, %{event_type: :meal})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html = render(element(view, "#event-#{event.id}-delete"))
+
+      assert html =~ ~s(aria-label="Slet hændelse")
+      assert html =~ ~s(data-confirm="Er du sikker på, at du vil slette hændelsen?")
+      assert html =~ ~s(hero-trash)
+      refute html =~ ~r/>\s*Slet\s*</
+    end
+
     test "aligns the rightmost editable day time popup inside the viewport", %{conn: conn} do
       assert {:ok, today} = Diary.get_or_create_day(~D[2026-08-16])
       assert {:ok, _today} = Diary.update_day(today, %{sleep_time: ~T[20:15:00]})

@@ -72,14 +72,39 @@ document.addEventListener("blur", (event) => {
   }
 }, true)
 
+const blurPopupInput = (popup, inputSelector) => {
+  const activeInput = popup.contains(document.activeElement) &&
+    document.activeElement.matches(inputSelector)
+      ? document.activeElement
+      : null
+  const input = activeInput || popup.querySelector(inputSelector)
+
+  if (input) {
+    input.blur()
+  }
+}
+
+const closePopup = (popup, inputSelector) => {
+  blurPopupInput(popup, inputSelector)
+  popup.removeAttribute("open")
+}
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && event.target.matches("[data-time-input]")) {
     const popup = event.target.closest("[data-day-time-popup]")
 
     if (popup) {
       event.preventDefault()
-      popup.removeAttribute("open")
-      event.target.blur()
+      closePopup(popup, "[data-time-input]")
+    }
+  }
+
+  if (event.key === "Enter" && event.target.matches("[data-event-input]")) {
+    const popup = event.target.closest("[data-event-popup]")
+
+    if (popup) {
+      event.preventDefault()
+      closePopup(popup, "[data-event-input]")
     }
   }
 }, true)
@@ -99,13 +124,13 @@ document.addEventListener("toggle", (event) => {
 document.addEventListener("pointerdown", (event) => {
   document.querySelectorAll("[data-day-time-popup][open]").forEach((popup) => {
     if (!popup.contains(event.target)) {
-      const input = popup.querySelector("[data-time-input]")
+      closePopup(popup, "[data-time-input]")
+    }
+  })
 
-      if (input) {
-        input.blur()
-      }
-
-      popup.removeAttribute("open")
+  document.querySelectorAll("[data-event-popup][open]").forEach((popup) => {
+    if (!popup.contains(event.target)) {
+      closePopup(popup, "[data-event-input]")
     }
   })
 }, true)
