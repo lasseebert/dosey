@@ -299,7 +299,10 @@ defmodule DoseyWeb.AppLive do
 
     <section class="mt-5">
       <h3 class="text-sm font-semibold text-[#344845]">Hændelser</h3>
-      <div class="mt-2 flex flex-wrap gap-2">
+      <div
+        id={"event-new-#{Date.to_iso8601(@day.date)}-actions"}
+        class="relative mt-2 flex flex-wrap gap-2"
+      >
         <button
           :for={type <- quick_add_event_types()}
           id={"event-new-#{Date.to_iso8601(@day.date)}-#{type}-quick-add"}
@@ -311,45 +314,67 @@ defmodule DoseyWeb.AppLive do
         >
           {event_type_label(type)}
         </button>
+        <details
+          id={"event-new-#{Date.to_iso8601(@day.date)}-popup"}
+          data-event-popup
+        >
+          <summary
+            id={"event-new-#{Date.to_iso8601(@day.date)}-other-summary"}
+            class="cursor-pointer list-none rounded-md bg-[#f5f8f6] px-3 py-2 text-sm font-medium text-[#0b6f6b] marker:hidden hover:bg-[#eef3f1]"
+          >
+            Andet
+          </summary>
+
+          <form
+            id={"event-new-#{Date.to_iso8601(@day.date)}-form"}
+            class="absolute left-0 right-0 top-full z-20 mt-2 grid grid-cols-1 gap-2 rounded-md border border-[#cbd8d2] bg-white p-3 shadow-lg sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto_auto]"
+            phx-submit="add-event"
+          >
+            <input type="hidden" name="date" value={Date.to_iso8601(@day.date)} />
+            <.event_type_select
+              name="event[event_type]"
+              value={nil}
+              event_types={manual_event_types()}
+              data_event_input
+            />
+            <input
+              name="event[text]"
+              type="text"
+              placeholder="Hvad skete der?"
+              data-event-input
+              class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
+            />
+            <input
+              name="event[started_at_time]"
+              type="text"
+              inputmode="numeric"
+              placeholder="tt:mm"
+              value={format_time_input(current_copenhagen_time())}
+              data-time-input
+              data-event-input
+              class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
+            />
+            <input
+              name="event[ended_at_time]"
+              type="text"
+              inputmode="numeric"
+              placeholder="tt:mm"
+              data-time-input
+              data-event-input
+              class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              class="rounded-md bg-[#0b6f6b] px-3 py-2 text-sm font-semibold text-white"
+            >
+              Tilføj
+            </button>
+          </form>
+        </details>
       </div>
       <div class="mt-2 flex flex-col gap-2">
         <.event_form :for={event <- @day.events} event={event} />
       </div>
-
-      <form
-        id={"event-new-#{Date.to_iso8601(@day.date)}-form"}
-        class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto_auto]"
-        phx-submit="add-event"
-      >
-        <input type="hidden" name="date" value={Date.to_iso8601(@day.date)} />
-        <.event_type_select name="event[event_type]" value={nil} event_types={manual_event_types()} />
-        <input
-          name="event[text]"
-          type="text"
-          placeholder="Hvad skete der?"
-          class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
-        />
-        <input
-          name="event[started_at_time]"
-          type="text"
-          inputmode="numeric"
-          placeholder="tt:mm"
-          data-time-input
-          class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
-        />
-        <input
-          name="event[ended_at_time]"
-          type="text"
-          inputmode="numeric"
-          placeholder="tt:mm"
-          data-time-input
-          class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
-        />
-        <button
-          type="submit"
-          class="rounded-md bg-[#0b6f6b] px-3 py-2 text-sm font-semibold text-white"
-        >Tilføj</button>
-      </form>
     </section>
     """
   end

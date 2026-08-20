@@ -197,16 +197,57 @@ defmodule DoseyWeb.AppLiveTest do
 
       assert html =~ ~s(id="event-new-2026-08-16-wake_attempt-quick-add")
       assert html =~ ~s(id="event-new-2026-08-16-put_to_bed-quick-add")
+      assert html =~ ~s(id="event-new-2026-08-16-other-summary")
       assert html =~ ~s(phx-click="quick-add-event")
       assert html =~ ~s(phx-value-date="2026-08-16")
       assert html =~ ~s(phx-value-event-type="wake_attempt")
       assert html =~ ~s(phx-value-event-type="put_to_bed")
+
+      assert html =~
+               ~r/<summary[^>]*id="event-new-2026-08-16-other-summary"[^>]*>\s*Andet\s*<\/summary>/
 
       new_event_form = render(element(view, "#event-new-2026-08-16-form"))
 
       refute new_event_form =~ ~s(value="wake_attempt")
       refute new_event_form =~ ~s(value="put_to_bed")
       assert new_event_form =~ ~s(value="meal")
+    end
+
+    test "renders the new event form inside the other event popup", %{conn: conn} do
+      Application.delete_env(:dosey, :today)
+      Application.put_env(:dosey, :now, fn -> ~U[2026-08-16 05:45:00Z] end)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html = render(element(view, "#event-new-2026-08-16-popup"))
+
+      assert html =~ ~s(data-event-popup)
+      assert html =~ ~s(id="event-new-2026-08-16-other-summary")
+      assert html =~ ~s(id="event-new-2026-08-16-form")
+      assert html =~ ~s(phx-submit="add-event")
+      assert html =~ ~s(name="event[text]")
+      assert html =~ ~s(data-event-input)
+      assert html =~ ~s(name="event[started_at_time]")
+      assert html =~ ~s(value="7:45")
+      assert html =~ ~s(name="event[ended_at_time]")
+    end
+
+    test "aligns the new event popup inside the viewport", %{conn: conn} do
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      action_row = render(element(view, "#event-new-2026-08-16-actions"))
+      html = render(element(view, "#event-new-2026-08-16-form"))
+
+      assert action_row =~ ~s(relative)
+      assert html =~ ~s(left-0)
+      assert html =~ ~s(right-0)
+      refute html =~ ~S|w-[min(90vw,44rem)]|
     end
 
     test "quick-add creates an event with the current Copenhagen time", %{conn: conn} do
