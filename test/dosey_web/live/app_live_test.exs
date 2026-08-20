@@ -73,16 +73,22 @@ defmodule DoseyWeb.AppLiveTest do
       assert html =~ "data-day-date=\"2026-08-10\""
     end
 
-    test "allows editing today and yesterday but renders older days read-only", %{conn: conn} do
+    test "renders all displayed days as editable", %{conn: conn} do
       {:ok, _view, html} =
         conn
         |> log_in_user()
         |> live(~p"/app")
 
-      assert html =~ ~s(id="day-2026-08-16-form")
-      assert html =~ ~s(id="day-2026-08-15-form")
-      refute html =~ ~s(id="day-2026-08-14-form")
-      assert html =~ "Kun læsning"
+      for date <- Date.range(~D[2026-08-16], ~D[2026-08-10], -1) do
+        date_string = Date.to_iso8601(date)
+
+        assert html =~ ~s(id="day-#{date_string}-form")
+        assert html =~ ~s(id="event-new-#{date_string}-wake_attempt-quick-add")
+        assert html =~ ~s(id="event-new-#{date_string}-put_to_bed-quick-add")
+        assert html =~ ~s(id="event-new-#{date_string}-other-summary")
+      end
+
+      refute html =~ "Kun læsning"
     end
 
     test "renders times with 24-hour formatting", %{conn: conn} do
@@ -276,9 +282,7 @@ defmodule DoseyWeb.AppLiveTest do
       assert event.text == nil
     end
 
-    test "renders quick-added event types like other events when editable and read-only", %{
-      conn: conn
-    } do
+    test "renders quick-added event types like other events on all days", %{conn: conn} do
       assert {:ok, yesterday} = Diary.get_or_create_day(~D[2026-08-15])
 
       assert {:ok, event} =
@@ -309,8 +313,16 @@ defmodule DoseyWeb.AppLiveTest do
       assert editable_event =~ ~s(name="event[ended_at_time]")
       assert editable_event =~ ~s(value="19:45")
 
+      [older_event] = Diary.get_day(~D[2026-08-14]).events
+      older_editable_event = render(element(view, "#event-#{older_event.id}-form"))
+
+      assert older_editable_event =~ ~s(name="event[event_type]")
+      assert older_editable_event =~ ~s(value="wake_attempt")
+      assert older_editable_event =~ ~s(name="event[text]")
+      assert older_editable_event =~ ~s(name="event[started_at_time]")
+      assert older_editable_event =~ ~s(name="event[ended_at_time]")
+      assert older_editable_event =~ ~s(value="7:05")
       assert html =~ "Vækning"
-      assert html =~ "07:05"
     end
 
     test "renders editable events as compact rows that open editor popups", %{conn: conn} do
@@ -392,6 +404,29 @@ defmodule DoseyWeb.AppLiveTest do
       assert html =~ "Gemt"
 
       assert day = Diary.get_day(~D[2026-08-16])
+      assert day.wake_time == ~T[07:45:00]
+    end
+
+    test "sets an empty older day time and creates the day when needed", %{conn: conn} do
+      Application.delete_env(:dosey, :today)
+      Application.put_env(:dosey, :now, fn -> ~U[2026-08-16 05:45:00Z] end)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      assert Diary.get_day(~D[2026-08-14]) == nil
+
+      html =
+        view
+        |> element("#day-2026-08-14-wake_time-set-now")
+        |> render_click()
+
+      assert html =~ "07:45"
+      assert html =~ "Gemt"
+
+      assert day = Diary.get_day(~D[2026-08-14])
       assert day.wake_time == ~T[07:45:00]
     end
 
@@ -599,6 +634,40 @@ defmodule DoseyWeb.AppLiveTest do
 
       assert html =~ "Gemt"
       assert Diary.get_day(~D[2026-08-15]).events == []
+    end
+
+    test "adds an event to an older empty day and creates the day when needed", %{conn: conn} do
+      Application.delete_env(:dosey, :today)
+      Application.put_env(:dosey, :now, fn -> ~U[2026-08-16 05:45:00Z] end)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      assert Diary.get_day(~D[2026-08-14]) == nil
+
+      html =
+        view
+        |> form("#event-new-2026-08-14-form", %{
+          "event" => %{
+            "event_type" => "meal",
+            "text" => "Morgenmad",
+            "started_at_time" => "07:45",
+            "ended_at_time" => ""
+          }
+        })
+        |> render_submit()
+
+      assert html =~ "Morgenmad"
+      assert html =~ "Gemt"
+
+      assert day = Diary.get_day(~D[2026-08-14])
+      [event] = day.events
+      assert event.event_type == :meal
+      assert event.text == "Morgenmad"
+      assert event.started_at_time == ~T[07:45:00]
+      assert event.ended_at_time == nil
     end
 
     test "accepts loose event time inputs and normalizes them after saving", %{conn: conn} do

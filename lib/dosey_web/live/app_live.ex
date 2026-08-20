@@ -62,8 +62,7 @@ defmodule DoseyWeb.AppLive do
   def handle_event("update-day", %{"date" => date_string, "day" => attrs}, socket) do
     date = Date.from_iso8601!(date_string)
 
-    with true <- editable?(socket, date),
-         %Day{} = day <- Diary.get_day(date),
+    with {:ok, %Day{} = day} <- Diary.get_or_create_day(date),
          {:ok, attrs} <- normalize_day_attrs(attrs),
          {:ok, _day} <- Diary.update_day(day, attrs) do
       {:noreply, socket |> mark_saved() |> load_days()}
@@ -79,8 +78,7 @@ defmodule DoseyWeb.AppLive do
       ) do
     date = Date.from_iso8601!(date_string)
 
-    with true <- editable?(socket, date),
-         %Day{} = day <- Diary.get_day(date),
+    with {:ok, %Day{} = day} <- Diary.get_or_create_day(date),
          {:ok, attrs} <- normalize_day_attrs(%{field => value}),
          {:ok, _day} <- Diary.update_day(day, attrs) do
       {:noreply, socket |> mark_saved() |> load_days()}
@@ -96,9 +94,8 @@ defmodule DoseyWeb.AppLive do
       ) do
     date = Date.from_iso8601!(date_string)
 
-    with true <- editable?(socket, date),
-         true <- field in ["wake_time", "medicine_time", "sleep_time"],
-         %Day{} = day <- Diary.get_day(date),
+    with true <- field in ["wake_time", "medicine_time", "sleep_time"],
+         {:ok, %Day{} = day} <- Diary.get_or_create_day(date),
          {:ok, _day} <- Diary.update_day(day, %{field => current_copenhagen_time()}) do
       {:noreply, socket |> mark_saved() |> load_days()}
     else
@@ -109,8 +106,7 @@ defmodule DoseyWeb.AppLive do
   def handle_event("add-event", %{"date" => date_string, "event" => attrs}, socket) do
     date = Date.from_iso8601!(date_string)
 
-    with true <- editable?(socket, date),
-         %Day{} = day <- Diary.get_day(date),
+    with {:ok, %Day{} = day} <- Diary.get_or_create_day(date),
          {:ok, attrs} <- normalize_event_attrs(attrs),
          {:ok, _event} <- Diary.add_event(day, attrs) do
       {:noreply, socket |> mark_saved() |> load_days()}
@@ -126,9 +122,8 @@ defmodule DoseyWeb.AppLive do
       ) do
     date = Date.from_iso8601!(date_string)
 
-    with true <- editable?(socket, date),
-         true <- event_type in Enum.map(quick_add_event_types(), &Atom.to_string/1),
-         %Day{} = day <- Diary.get_day(date),
+    with true <- event_type in Enum.map(quick_add_event_types(), &Atom.to_string/1),
+         {:ok, %Day{} = day} <- Diary.get_or_create_day(date),
          {:ok, _event} <-
            Diary.add_event(day, %{
              event_type: String.to_existing_atom(event_type),
@@ -148,8 +143,6 @@ defmodule DoseyWeb.AppLive do
     event = find_event(socket.assigns.days, id)
 
     with %Event{} = event <- event,
-         %Day{} = day <- find_day(socket.assigns.days, event.day_id),
-         true <- editable?(socket, day.date),
          {:ok, attrs} <- normalize_event_attrs(%{field => value}),
          {:ok, _event} <- Diary.update_event(event, attrs) do
       {:noreply, socket |> mark_saved() |> load_days()}
@@ -162,8 +155,6 @@ defmodule DoseyWeb.AppLive do
     event = find_event(socket.assigns.days, id)
 
     with %Event{} = event <- event,
-         %Day{} = day <- find_day(socket.assigns.days, event.day_id),
-         true <- editable?(socket, day.date),
          {:ok, attrs} <- normalize_event_attrs(attrs),
          {:ok, _event} <- Diary.update_event(event, attrs) do
       {:noreply, socket |> mark_saved() |> load_days()}
@@ -176,8 +167,6 @@ defmodule DoseyWeb.AppLive do
     event = find_event(socket.assigns.days, id)
 
     with %Event{} = event <- event,
-         %Day{} = day <- find_day(socket.assigns.days, event.day_id),
-         true <- editable?(socket, day.date),
          {:ok, _event} <- Diary.delete_event(event) do
       {:noreply, socket |> mark_saved() |> load_days()}
     else
@@ -241,16 +230,9 @@ defmodule DoseyWeb.AppLive do
                 </h2>
                 <p class="text-sm text-[#60706c]">{format_date(day.date)}</p>
               </div>
-              <span
-                :if={!editable?(@today, @yesterday, day.date)}
-                class="rounded-md bg-[#eef3f1] px-2 py-1 text-xs font-medium text-[#60706c]"
-              >
-                Kun læsning
-              </span>
             </div>
 
-            <.editable_day :if={editable?(@today, @yesterday, day.date)} day={day} />
-            <.readonly_day :if={!editable?(@today, @yesterday, day.date)} day={day} />
+            <.editable_day day={day} />
           </article>
         </div>
       </section>
@@ -376,34 +358,6 @@ defmodule DoseyWeb.AppLive do
         <.event_form :for={event <- @day.events} event={event} />
       </div>
     </section>
-    """
-  end
-
-  defp readonly_day(assigns) do
-    ~H"""
-    <dl class="mt-4 grid grid-cols-3 gap-3 text-sm">
-      <div>
-        <dt class="text-[#60706c]">Vågnede</dt><dd class="font-medium">
-          {format_time(@day.wake_time)}
-        </dd>
-      </div>
-      <div>
-        <dt class="text-[#60706c]">Medicin</dt><dd class="font-medium">
-          {format_time(@day.medicine_time)}
-        </dd>
-      </div>
-      <div>
-        <dt class="text-[#60706c]">Sov</dt><dd class="font-medium">{format_time(@day.sleep_time)}</dd>
-      </div>
-    </dl>
-
-    <ul class="mt-4 flex flex-col gap-2 text-sm">
-      <li :for={event <- @day.events} class="rounded-md bg-[#f5f8f6] px-3 py-2">
-        <span class="font-medium">{event_type_label(event.event_type)}</span>
-        <span class="text-[#60706c]">{event_range(event)}</span>
-        <p :if={event.text} class="mt-1">{event.text}</p>
-      </li>
-    </ul>
     """
   end
 
@@ -646,13 +600,6 @@ defmodule DoseyWeb.AppLive do
     |> assign(:saved_status_ref, nil)
   end
 
-  defp editable?(socket, date),
-    do: editable?(socket.assigns.today, socket.assigns.yesterday, date)
-
-  defp editable?(today, yesterday, date), do: date in [today, yesterday]
-
-  defp find_day(days, day_id), do: Enum.find(days, &(&1.id == day_id))
-
   defp find_event(days, event_id) do
     days
     |> Enum.flat_map(& &1.events)
@@ -732,7 +679,6 @@ defmodule DoseyWeb.AppLive do
   defp month_name(11), do: "november"
   defp month_name(12), do: "december"
 
-  defp format_time(nil), do: "-"
   defp format_time(%Time{} = time), do: Calendar.strftime(time, "%H:%M")
 
   defp format_time_input(nil), do: nil
