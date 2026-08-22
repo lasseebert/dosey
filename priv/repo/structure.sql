@@ -43,7 +43,8 @@ CREATE TYPE public.diary_event_type AS ENUM (
     'put_to_bed',
     'other',
     'school',
-    'activity'
+    'activity',
+    'trip'
 );
 
 
@@ -181,3 +182,4 @@ INSERT INTO public."schema_migrations" (version) VALUES (20260815120000);
 INSERT INTO public."schema_migrations" (version) VALUES (20260816120000);
 INSERT INTO public."schema_migrations" (version) VALUES (20260816130000);
 INSERT INTO public."schema_migrations" (version) VALUES (20260820120000);
+INSERT INTO public."schema_migrations" (version) VALUES (20260822120000);

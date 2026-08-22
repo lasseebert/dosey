@@ -9,6 +9,7 @@ defmodule Dosey.Diary.Event do
     :meal,
     :school,
     :activity,
+    :trip,
     :wake_attempt,
     :put_to_bed,
     :other

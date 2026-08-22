@@ -218,6 +218,7 @@ defmodule DoseyWeb.AppLiveTest do
       refute new_event_form =~ ~s(value="put_to_bed")
       assert new_event_form =~ ~r/<option[^>]*value="school"[^>]*>\s*Skole\s*<\/option>/
       assert new_event_form =~ ~r/<option[^>]*value="activity"[^>]*>\s*Aktivitet\s*<\/option>/
+      assert new_event_form =~ ~r/<option[^>]*value="trip"[^>]*>\s*Tur\s*<\/option>/
       assert new_event_form =~ ~s(value="meal")
     end
 

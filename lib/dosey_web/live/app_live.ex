@@ -681,6 +681,7 @@ defmodule DoseyWeb.AppLive do
   defp event_type_label(:meal), do: "Måltid"
   defp event_type_label(:school), do: "Skole"
   defp event_type_label(:activity), do: "Aktivitet"
+  defp event_type_label(:trip), do: "Tur"
   defp event_type_label(:wake_attempt), do: "Vækning"
   defp event_type_label(:put_to_bed), do: "Putning"
   defp event_type_label(:other), do: "Andet"
