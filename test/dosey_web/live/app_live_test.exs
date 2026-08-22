@@ -350,7 +350,7 @@ defmodule DoseyWeb.AppLiveTest do
       assert html =~ "08:00"
       assert html =~ "Spiste havregrød"
       assert html =~ ~s(id="event-#{event.id}-form")
-      assert html =~ ~s(phx-blur="update-event-field")
+      refute html =~ ~s(phx-blur=)
       assert html =~ ~s(name="event[text]")
 
       refute html =~ ~r/^<form[^>]*id="event-#{event.id}-form"/
@@ -615,19 +615,24 @@ defmodule DoseyWeb.AppLiveTest do
 
       yesterday = Diary.get_day(~D[2026-08-15])
       [event] = yesterday.events
-      assert render(element(view, "#event-#{event.id}-form")) =~ ~s(phx-blur="update-event-field")
 
-      assert render(element(view, "#event-#{event.id}-form")) =~
-               ~r/<form[^>]+phx-change="update-event"/
-
-      view
-      |> element(~s(#event-#{event.id}-form input[name="event[text]"]))
-      |> render_blur(%{"value" => "Spiste yoghurt"})
+      event_form = render(element(view, "#event-#{event.id}-form"))
+      assert event_form =~ ~r/<form[^>]+phx-submit="update-event"/
+      refute event_form =~ ~s(phx-change=)
+      refute event_form =~ ~s(phx-blur=)
 
       html =
         view
-        |> element(~s(#event-#{event.id}-form input[name="event[started_at_time]"]))
-        |> render_blur(%{"value" => "08:10"})
+        |> form("#event-#{event.id}-form", %{
+          "event_id" => event.id,
+          "event" => %{
+            "event_type" => "meal",
+            "text" => "Spiste yoghurt",
+            "started_at_time" => "08:10",
+            "ended_at_time" => ""
+          }
+        })
+        |> render_submit()
 
       assert html =~ "Spiste yoghurt"
 
@@ -701,7 +706,7 @@ defmodule DoseyWeb.AppLiveTest do
       assert event.ended_at_time == ~T[09:30:00]
     end
 
-    test "normalizes an event time input after it loses focus", %{conn: conn} do
+    test "does not update an existing event after an event field loses focus", %{conn: conn} do
       assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-15])
       assert {:ok, event} = Diary.add_event(day, %{event_type: :meal})
 
@@ -712,20 +717,47 @@ defmodule DoseyWeb.AppLiveTest do
 
       assert html =~ "event-#{event.id}-form"
 
-      html =
+      assert_raise ArgumentError, fn ->
         view
         |> element(~s(#event-#{event.id}-form input[name="event[started_at_time]"]))
         |> render_blur(%{"value" => "9:30"})
-
-      assert html =~ ~s(value="9:30")
+      end
 
       [updated_event] = Diary.get_day(~D[2026-08-15]).events
-      assert updated_event.started_at_time == ~T[09:30:00]
+      assert updated_event.started_at_time == nil
     end
 
-    test "updates an existing event type from the event form", %{conn: conn} do
+    test "does not update an existing event type on form change", %{conn: conn} do
       assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-15])
       assert {:ok, event} = Diary.add_event(day, %{event_type: :meal})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      assert_raise ArgumentError, fn ->
+        view
+        |> form("#event-#{event.id}-form", %{
+          "event_id" => event.id,
+          "event" => %{"event_type" => "school"}
+        })
+        |> render_change()
+      end
+
+      [updated_event] = Diary.get_day(~D[2026-08-15]).events
+      assert updated_event.event_type == :meal
+    end
+
+    test "updates an existing event from the event form on submit", %{conn: conn} do
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-15])
+
+      assert {:ok, event} =
+               Diary.add_event(day, %{
+                 event_type: :meal,
+                 text: "Morgenmad",
+                 started_at_time: ~T[08:00:00]
+               })
 
       {:ok, view, _html} =
         conn
@@ -736,24 +768,23 @@ defmodule DoseyWeb.AppLiveTest do
         view
         |> form("#event-#{event.id}-form", %{
           "event_id" => event.id,
-          "event" => %{"event_type" => "school"}
+          "event" => %{
+            "event_type" => "school",
+            "text" => "Skolefest",
+            "started_at_time" => "10:15",
+            "ended_at_time" => "11:30"
+          }
         })
-        |> render_change()
+        |> render_submit()
 
       assert html =~ ~s(id="event-#{event.id}-form")
+      assert html =~ "Skolefest"
 
       [updated_event] = Diary.get_day(~D[2026-08-15]).events
       assert updated_event.event_type == :school
-
-      view
-      |> form("#event-#{event.id}-form", %{
-        "event_id" => event.id,
-        "event" => %{"event_type" => "activity"}
-      })
-      |> render_change()
-
-      [updated_event] = Diary.get_day(~D[2026-08-15]).events
-      assert updated_event.event_type == :activity
+      assert updated_event.text == "Skolefest"
+      assert updated_event.started_at_time == ~T[10:15:00]
+      assert updated_event.ended_at_time == ~T[11:30:00]
     end
   end
 

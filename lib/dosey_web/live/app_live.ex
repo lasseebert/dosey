@@ -135,22 +135,6 @@ defmodule DoseyWeb.AppLive do
     end
   end
 
-  def handle_event(
-        "update-event-field",
-        %{"id" => id, "field" => field, "value" => value},
-        socket
-      ) do
-    event = find_event(socket.assigns.days, id)
-
-    with %Event{} = event <- event,
-         {:ok, attrs} <- normalize_event_attrs(%{field => value}),
-         {:ok, _event} <- Diary.update_event(event, attrs) do
-      {:noreply, socket |> mark_saved() |> load_days()}
-    else
-      _error -> {:noreply, assign(socket, :error_message, "Hændelsen kunne ikke gemmes.")}
-    end
-  end
-
   def handle_event("update-event", %{"event_id" => id, "event" => attrs}, socket) do
     event = find_event(socket.assigns.days, id)
 
@@ -376,7 +360,7 @@ defmodule DoseyWeb.AppLive do
       <form
         id={"event-#{@event.id}-form"}
         class="absolute left-0 top-full z-20 mt-2 grid w-full min-w-72 grid-cols-1 gap-2 rounded-md border border-[#cbd8d2] bg-white p-3 shadow-lg sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto_auto]"
-        phx-change="update-event"
+        phx-submit="update-event"
       >
         <input type="hidden" name="event_id" value={@event.id} />
         <.event_type_select
@@ -389,9 +373,6 @@ defmodule DoseyWeb.AppLive do
           type="text"
           value={@event.text}
           data-event-input
-          phx-blur="update-event-field"
-          phx-value-id={@event.id}
-          phx-value-field="text"
           class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
         />
         <input
@@ -402,9 +383,6 @@ defmodule DoseyWeb.AppLive do
           value={format_time_input(@event.started_at_time)}
           data-time-input
           data-event-input
-          phx-blur="update-event-field"
-          phx-value-id={@event.id}
-          phx-value-field="started_at_time"
           class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
         />
         <input
@@ -415,9 +393,6 @@ defmodule DoseyWeb.AppLive do
           value={format_time_input(@event.ended_at_time)}
           data-time-input
           data-event-input
-          phx-blur="update-event-field"
-          phx-value-id={@event.id}
-          phx-value-field="ended_at_time"
           class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
         />
         <button

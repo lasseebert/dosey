@@ -38,9 +38,9 @@ defmodule DoseyWeb.AppJavaScriptTest do
     assert app_js =~ ~s(event.key === "Enter")
     assert app_js =~ ~s([data-event-popup])
     assert app_js =~ ~S|closest("[data-event-popup]")|
-    assert app_js =~ ~S|closePopup(popup, "[data-event-input]")|
+    assert app_js =~ ~S|closePopup(popup, "[data-event-input]", {submit: true})|
+    assert app_js =~ "submitPopupForm"
     assert app_js =~ ~S|removeAttribute("open")|
-    assert app_js =~ ~S|input.blur()|
   end
 
   test "focuses the day time input when its popup opens" do
@@ -77,7 +77,8 @@ defmodule DoseyWeb.AppJavaScriptTest do
     assert app_js =~ ~s(addEventListener("pointerdown")
     assert app_js =~ ~S|querySelectorAll("[data-event-popup][open]")|
     assert app_js =~ ~S|popup.contains(event.target)|
-    assert app_js =~ ~S|closePopup(popup, "[data-event-input]")|
+    assert app_js =~ ~S|closePopup(popup, "[data-event-input]", {submit: true})|
+    assert app_js =~ "submitPopupForm"
     assert app_js =~ ~S|input.blur()|
     assert app_js =~ ~S|popup.removeAttribute("open")|
   end

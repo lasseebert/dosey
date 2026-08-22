@@ -84,8 +84,21 @@ const blurPopupInput = (popup, inputSelector) => {
   }
 }
 
-const closePopup = (popup, inputSelector) => {
+const submitPopupForm = (popup) => {
+  const form = popup.querySelector("form")
+
+  if (form) {
+    form.requestSubmit()
+  }
+}
+
+const closePopup = (popup, inputSelector, {submit = false} = {}) => {
   blurPopupInput(popup, inputSelector)
+
+  if (submit) {
+    submitPopupForm(popup)
+  }
+
   popup.removeAttribute("open")
 }
 
@@ -104,7 +117,7 @@ document.addEventListener("keydown", (event) => {
 
     if (popup) {
       event.preventDefault()
-      closePopup(popup, "[data-event-input]")
+      closePopup(popup, "[data-event-input]", {submit: true})
     }
   }
 }, true)
@@ -130,7 +143,7 @@ document.addEventListener("pointerdown", (event) => {
 
   document.querySelectorAll("[data-event-popup][open]").forEach((popup) => {
     if (!popup.contains(event.target)) {
-      closePopup(popup, "[data-event-input]")
+      closePopup(popup, "[data-event-input]", {submit: true})
     }
   })
 }, true)
