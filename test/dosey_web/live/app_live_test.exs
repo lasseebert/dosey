@@ -40,8 +40,8 @@ defmodule DoseyWeb.AppLiveTest do
         |> log_in_user()
         |> live(~p"/app")
 
-      assert html =~ "I dag"
-      assert html =~ "I går"
+      assert html =~ "(i dag)"
+      assert html =~ "(i går)"
       assert Diary.get_day(~D[2026-08-16])
       assert Diary.get_day(~D[2026-08-15])
     end
@@ -55,7 +55,8 @@ defmodule DoseyWeb.AppLiveTest do
         |> log_in_user()
         |> live(~p"/app")
 
-      assert html =~ "1. januar 2026"
+      assert html =~ "Torsdag, 1. januar (i dag)"
+      assert html =~ "Onsdag, 31. december 2025, (i går)"
       assert Diary.get_day(~D[2026-01-01])
       assert Diary.get_day(~D[2025-12-31])
     end
@@ -66,11 +67,22 @@ defmodule DoseyWeb.AppLiveTest do
         |> log_in_user()
         |> live(~p"/app")
 
-      assert html =~ "16. august 2026"
-      assert html =~ "15. august 2026"
-      assert html =~ "10. august 2026"
+      assert html =~ "16. august"
+      assert html =~ "15. august"
+      assert html =~ "10. august"
       assert html =~ "data-day-date=\"2026-08-16\""
       assert html =~ "data-day-date=\"2026-08-10\""
+    end
+
+    test "renders day headers with weekday, date, and relative labels", %{conn: conn} do
+      {:ok, _view, html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      assert html =~ "Søndag, 16. august (i dag)"
+      assert html =~ "Lørdag, 15. august, (i går)"
+      assert html =~ "Fredag, 14. august"
     end
 
     test "renders all displayed days as editable", %{conn: conn} do

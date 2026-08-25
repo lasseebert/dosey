@@ -212,7 +212,6 @@ defmodule DoseyWeb.AppLive do
                 <h2 class="text-lg font-semibold text-[#172526]">
                   {day_title(day.date, @today, @yesterday)}
                 </h2>
-                <p class="text-sm text-[#60706c]">{format_date(day.date)}</p>
               </div>
             </div>
 
@@ -631,13 +630,41 @@ defmodule DoseyWeb.AppLive do
     integer
   end
 
-  defp day_title(date, today, _yesterday) when date == today, do: "I dag"
-  defp day_title(date, _today, yesterday) when date == yesterday, do: "I går"
-  defp day_title(_date, _today, _yesterday), do: "Dag"
+  defp day_title(date, today, _yesterday) when date == today do
+    "#{format_day_header_date(today, today)} (i dag)"
+  end
 
-  defp format_date(date) do
+  defp day_title(date, today, yesterday) when date == yesterday do
+    "#{format_day_header_date(yesterday, today)}, (i går)"
+  end
+
+  defp day_title(date, today, _yesterday), do: format_day_header_date(date, today)
+
+  defp format_day_header_date(date, today) do
+    "#{weekday_name(date)}, #{format_date(date, today)}"
+  end
+
+  defp format_date(date, today) when date.year == today.year do
+    "#{date.day}. #{month_name(date.month)}"
+  end
+
+  defp format_date(date, _today) do
     "#{date.day}. #{month_name(date.month)} #{date.year}"
   end
+
+  defp weekday_name(%Date{} = date) do
+    date
+    |> Date.day_of_week()
+    |> weekday_name()
+  end
+
+  defp weekday_name(1), do: "Mandag"
+  defp weekday_name(2), do: "Tirsdag"
+  defp weekday_name(3), do: "Onsdag"
+  defp weekday_name(4), do: "Torsdag"
+  defp weekday_name(5), do: "Fredag"
+  defp weekday_name(6), do: "Lørdag"
+  defp weekday_name(7), do: "Søndag"
 
   defp month_name(1), do: "januar"
   defp month_name(2), do: "februar"
