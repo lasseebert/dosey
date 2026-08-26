@@ -104,7 +104,7 @@ defmodule DoseyWeb.AppLiveTest do
     end
 
     test "renders times with 24-hour formatting", %{conn: conn} do
-      assert {:ok, older_day} = Diary.create_day(~D[2026-08-14])
+      assert {:ok, older_day} = Diary.get_or_create_day(~D[2026-08-14])
 
       assert {:ok, _older_day} =
                Diary.update_day(older_day, %{
@@ -306,7 +306,7 @@ defmodule DoseyWeb.AppLiveTest do
                  started_at_time: ~T[19:45:00]
                })
 
-      assert {:ok, older_day} = Diary.create_day(~D[2026-08-14])
+      assert {:ok, older_day} = Diary.get_or_create_day(~D[2026-08-14])
 
       assert {:ok, _older_event} =
                Diary.add_event(older_day, %{

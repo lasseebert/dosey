@@ -41,13 +41,6 @@ defmodule Dosey.Diary do
     |> Repo.all()
   end
 
-  @spec create_day(Date.t() | nil) :: {:ok, Day.t()} | {:error, Changeset.t()}
-  def create_day(date) when is_struct(date, Date) or is_nil(date) do
-    %Day{}
-    |> create_day_changeset(date)
-    |> Repo.insert()
-  end
-
   @spec update_day(Day.t(), map()) :: {:ok, Day.t()} | {:error, Changeset.t()}
   def update_day(%Day{} = day, attrs) when is_map(attrs) do
     day

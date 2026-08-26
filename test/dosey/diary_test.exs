@@ -3,46 +3,9 @@ defmodule Dosey.DiaryTest do
 
   alias Dosey.Diary
 
-  describe "create_day/1" do
-    test "creates a day with only a date" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
-
-      assert is_binary(day.id)
-      assert {:ok, _uuid} = Ecto.UUID.cast(day.id)
-
-      assert day.date == ~D[2026-08-16]
-      assert day.wake_time == nil
-      assert day.medicine_time == nil
-      assert day.sleep_time == nil
-
-      assert %DateTime{} = day.inserted_at
-      assert %DateTime{} = day.updated_at
-    end
-
-    test "requires a date" do
-      assert {:error, changeset} = Diary.create_day(nil)
-
-      assert %{date: ["can't be blank"]} = errors_on(changeset)
-    end
-
-    test "only accepts a date input" do
-      assert_raise FunctionClauseError, fn ->
-        apply(Diary, :create_day, [%{date: ~D[2026-08-16]}])
-      end
-    end
-
-    test "requires unique dates" do
-      assert {:ok, _day} = Diary.create_day(~D[2026-08-16])
-
-      assert {:error, changeset} = Diary.create_day(~D[2026-08-16])
-
-      assert %{date: ["has already been taken"]} = errors_on(changeset)
-    end
-  end
-
   describe "update_day/2" do
     test "updates quick summary times" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, updated_day} =
                Diary.update_day(day, %{
@@ -57,7 +20,7 @@ defmodule Dosey.DiaryTest do
     end
 
     test "persists time fields with seconds precision" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-17])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-17])
 
       assert {:ok, _updated_day} =
                Diary.update_day(day, %{
@@ -73,7 +36,7 @@ defmodule Dosey.DiaryTest do
     end
 
     test "truncates subsecond quick summary times to seconds precision" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-17])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-17])
 
       assert {:ok, _updated_day} =
                Diary.update_day(day, %{
@@ -89,7 +52,7 @@ defmodule Dosey.DiaryTest do
     end
 
     test "accepts quick summary times with seconds precision" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, _updated_day} =
                Diary.update_day(day, %{
@@ -107,7 +70,7 @@ defmodule Dosey.DiaryTest do
 
   describe "add_event/2" do
     test "adds a typed event without text or times" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, event} =
                Diary.add_event(day, %{
@@ -122,7 +85,7 @@ defmodule Dosey.DiaryTest do
     end
 
     test "adds a typed event with start and end times" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, event} =
                Diary.add_event(day, %{
@@ -139,7 +102,7 @@ defmodule Dosey.DiaryTest do
     end
 
     test "truncates subsecond event times to seconds precision" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, event} =
                Diary.add_event(day, %{
@@ -153,7 +116,7 @@ defmodule Dosey.DiaryTest do
     end
 
     test "adds a typed event with only a start time" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, event} =
                Diary.add_event(day, %{
@@ -167,7 +130,7 @@ defmodule Dosey.DiaryTest do
     end
 
     test "adds school, activity, and trip events" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, school_event} =
                Diary.add_event(day, %{
@@ -193,7 +156,7 @@ defmodule Dosey.DiaryTest do
     end
 
     test "rejects unknown event types" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:error, changeset} =
                Diary.add_event(day, %{
@@ -205,7 +168,7 @@ defmodule Dosey.DiaryTest do
     end
 
     test "accepts event times with seconds precision" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, event} =
                Diary.add_event(day, %{
@@ -221,7 +184,7 @@ defmodule Dosey.DiaryTest do
 
   describe "get_day/1" do
     test "returns a day with events ordered by insertion time" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, first_event} =
                Diary.add_event(day, %{
@@ -257,7 +220,7 @@ defmodule Dosey.DiaryTest do
 
   describe "get_or_create_day/1" do
     test "returns an existing day for the date" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, existing_day} = Diary.get_or_create_day(~D[2026-08-16])
       assert existing_day.id == day.id
@@ -271,7 +234,7 @@ defmodule Dosey.DiaryTest do
     end
 
     test "returns the existing day when the date already exists" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, existing_day} = Diary.get_or_create_day(~D[2026-08-16])
       assert existing_day.id == day.id
@@ -280,8 +243,8 @@ defmodule Dosey.DiaryTest do
 
   describe "list_days/2" do
     test "returns existing days in the calendar range ordered newest first with events preloaded" do
-      assert {:ok, older_day} = Diary.create_day(~D[2026-08-14])
-      assert {:ok, newer_day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, older_day} = Diary.get_or_create_day(~D[2026-08-14])
+      assert {:ok, newer_day} = Diary.get_or_create_day(~D[2026-08-16])
       assert {:ok, event} = Diary.add_event(older_day, %{event_type: :meal})
 
       assert [returned_newer_day, returned_older_day] = Diary.list_days(~D[2026-08-16], 3)
@@ -293,7 +256,7 @@ defmodule Dosey.DiaryTest do
 
   describe "update_event/2" do
     test "updates event type, text, and times" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
 
       assert {:ok, event} =
                Diary.add_event(day, %{
@@ -315,7 +278,7 @@ defmodule Dosey.DiaryTest do
     end
 
     test "accepts event updates with seconds precision" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
       assert {:ok, event} = Diary.add_event(day, %{event_type: :social})
 
       assert {:ok, updated_event} =
@@ -331,7 +294,7 @@ defmodule Dosey.DiaryTest do
 
   describe "delete_event/1" do
     test "deletes an event" do
-      assert {:ok, day} = Diary.create_day(~D[2026-08-16])
+      assert {:ok, day} = Diary.get_or_create_day(~D[2026-08-16])
       assert {:ok, event} = Diary.add_event(day, %{event_type: :put_to_bed})
 
       assert {:ok, deleted_event} = Diary.delete_event(event)
