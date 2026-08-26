@@ -12,15 +12,8 @@ defmodule Dosey.Accounts.UserRegistration do
 
   def new(attrs) when is_list(attrs) do
     %__MODULE__{
-      email: Keyword.get(attrs, :email),
-      password: Keyword.get(attrs, :password)
-    }
-  end
-
-  def new(%{email: email, password: password}) do
-    %__MODULE__{
-      email: email,
-      password: password
+      email: Keyword.fetch!(attrs, :email),
+      password: Keyword.fetch!(attrs, :password)
     }
   end
 end
