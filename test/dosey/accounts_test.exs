@@ -18,6 +18,7 @@ defmodule Dosey.AccountsTest do
       assert {:ok, _uuid} = Ecto.UUID.cast(user.id)
 
       assert is_binary(user.hashed_password)
+      assert String.starts_with?(user.hashed_password, "$2b$04$")
       refute user.hashed_password == "correct horse battery staple"
       refute Map.has_key?(user, :password)
 

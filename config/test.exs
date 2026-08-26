@@ -1,5 +1,7 @@
 import Config
 
+config :bcrypt_elixir, log_rounds: 4
+
 config :dosey, Dosey.Repo,
   username: "postgres",
   password: "postgres",
