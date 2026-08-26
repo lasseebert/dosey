@@ -19,8 +19,6 @@ defmodule Dosey.Diary do
     |> Repo.one()
   end
 
-  def get_day(_date), do: nil
-
   @spec get_or_create_day(Date.t()) :: {:ok, Day.t()} | {:error, Changeset.t()}
   def get_or_create_day(%Date{} = date) do
     %Day{}
