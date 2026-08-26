@@ -7,6 +7,7 @@ defmodule DoseyWeb.AppLive do
   alias Dosey.Diary.Event
 
   @day_count 7
+  @time_zone "Europe/Copenhagen"
 
   @impl true
   def mount(_params, %{"user_id" => user_id}, socket) do
@@ -96,7 +97,7 @@ defmodule DoseyWeb.AppLive do
 
     with true <- field in ["wake_time", "medicine_time", "sleep_time"],
          {:ok, %Day{} = day} <- Diary.get_or_create_day(date),
-         {:ok, _day} <- Diary.update_day(day, %{field => current_copenhagen_time()}) do
+         {:ok, _day} <- Diary.update_day(day, %{field => current_local_time()}) do
       {:noreply, socket |> mark_saved() |> load_days()}
     else
       _error -> {:noreply, assign(socket, :error_message, "Dagen kunne ikke gemmes.")}
@@ -127,7 +128,7 @@ defmodule DoseyWeb.AppLive do
          {:ok, _event} <-
            Diary.add_event(day, %{
              event_type: String.to_existing_atom(event_type),
-             started_at_time: current_copenhagen_time()
+             started_at_time: current_local_time()
            }) do
       {:noreply, socket |> mark_saved() |> load_days()}
     else
@@ -314,7 +315,7 @@ defmodule DoseyWeb.AppLive do
               type="text"
               inputmode="numeric"
               placeholder="tt:mm"
-              value={format_time_input(current_copenhagen_time())}
+              value={format_time_input(current_local_time())}
               data-time-input
               data-event-input
               class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
@@ -513,47 +514,23 @@ defmodule DoseyWeb.AppLive do
   end
 
   defp today do
-    Application.get_env(:dosey, :today, &copenhagen_today/0).()
+    Application.get_env(:dosey, :today, &local_today/0).()
   end
 
-  defp copenhagen_today do
-    now = Application.get_env(:dosey, :now, fn -> DateTime.utc_now() end).()
-
-    now
-    |> DateTime.add(copenhagen_utc_offset_seconds(now), :second)
+  defp local_today do
+    local_now()
     |> DateTime.to_date()
   end
 
-  defp current_copenhagen_time do
-    now = Application.get_env(:dosey, :now, fn -> DateTime.utc_now() end).()
-
-    now
-    |> DateTime.add(copenhagen_utc_offset_seconds(now), :second)
+  defp current_local_time do
+    local_now()
     |> DateTime.to_time()
     |> Time.truncate(:second)
   end
 
-  defp copenhagen_utc_offset_seconds(%DateTime{} = utc_datetime) do
-    if copenhagen_summer_time?(utc_datetime), do: 2 * 60 * 60, else: 60 * 60
-  end
-
-  defp copenhagen_summer_time?(%DateTime{year: year} = utc_datetime) do
-    starts_at = copenhagen_summer_time_start(year)
-    ends_at = copenhagen_summer_time_end(year)
-
-    DateTime.compare(utc_datetime, starts_at) in [:eq, :gt] and
-      DateTime.compare(utc_datetime, ends_at) == :lt
-  end
-
-  defp copenhagen_summer_time_start(year), do: last_sunday_at_utc_one(year, 3)
-  defp copenhagen_summer_time_end(year), do: last_sunday_at_utc_one(year, 10)
-
-  defp last_sunday_at_utc_one(year, month) do
-    date = Date.end_of_month(Date.new!(year, month, 1))
-    days_since_sunday = Date.day_of_week(date, :sunday) - 1
-    date = Date.add(date, -days_since_sunday)
-
-    DateTime.new!(date, ~T[01:00:00], "Etc/UTC")
+  defp local_now do
+    Application.get_env(:dosey, :now, fn -> DateTime.utc_now() end).()
+    |> DateTime.shift_zone!(@time_zone)
   end
 
   defp mark_saved(socket) do
@@ -561,7 +538,7 @@ defmodule DoseyWeb.AppLive do
     Process.send_after(self(), {:clear_saved_status, ref}, 5_000)
 
     socket
-    |> assign(:saved_at, Calendar.strftime(current_copenhagen_time(), "%H:%M:%S"))
+    |> assign(:saved_at, Calendar.strftime(current_local_time(), "%H:%M:%S"))
     |> assign(:saved_status_ref, ref)
     |> assign(:error_message, nil)
   end

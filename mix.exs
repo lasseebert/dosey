@@ -73,7 +73,10 @@ defmodule Dosey.MixProject do
       {:bcrypt_elixir, "~> 3.0"},
 
       # Easily define structs with typed fields
-      {:typed_struct, "~> 0.3.0"}
+      {:typed_struct, "~> 0.3.0"},
+
+      # Time zone support
+      {:tzdata, "~> 1.1"}
     ]
   end
 

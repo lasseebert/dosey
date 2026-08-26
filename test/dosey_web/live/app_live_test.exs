@@ -463,6 +463,24 @@ defmodule DoseyWeb.AppLiveTest do
       refute html =~ "Gemt 05:45:00"
     end
 
+    test "uses Copenhagen timezone rules instead of a hardcoded DST calendar", %{conn: conn} do
+      Application.delete_env(:dosey, :today)
+      Application.put_env(:dosey, :now, fn -> ~U[1970-04-01 12:00:00Z] end)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html =
+        view
+        |> element("#day-1970-04-01-wake_time-set-now")
+        |> render_click()
+
+      assert html =~ "Gemt 13:00:00"
+      refute html =~ "Gemt 14:00:00"
+    end
+
     test "updates today's quick summary times on blur and shows save confirmation", %{conn: conn} do
       {:ok, today} = Diary.get_or_create_day(~D[2026-08-16])
 
