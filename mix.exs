@@ -76,7 +76,7 @@ defmodule Dosey.MixProject do
       {:typed_struct, "~> 0.3.0"},
 
       # Time zone support
-      {:tzdata, "~> 1.1"}
+      {:tz, "~> 0.28.2"}
     ]
   end
 

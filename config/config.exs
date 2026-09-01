@@ -16,7 +16,7 @@ config :dosey, Dosey.Repo,
 
 config :dosey, :session_max_age, 60 * 60 * 24 * 30
 
-config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
+config :elixir, :time_zone_database, Tz.TimeZoneDatabase
 
 # Configure the endpoint
 config :dosey, DoseyWeb.Endpoint,
