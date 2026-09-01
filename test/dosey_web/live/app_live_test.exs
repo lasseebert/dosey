@@ -172,6 +172,36 @@ defmodule DoseyWeb.AppLiveTest do
       refute html =~ ~s(placeholder="tt:mm")
     end
 
+    test "renders timestamp inputs with a mobile keyboard that allows colons", %{conn: conn} do
+      assert {:ok, today} = Diary.get_or_create_day(~D[2026-08-16])
+
+      assert {:ok, _today} =
+               Diary.update_day(today, %{
+                 wake_time: ~T[07:20:00],
+                 medicine_time: ~T[13:05:00],
+                 sleep_time: ~T[20:15:00]
+               })
+
+      assert {:ok, _event} =
+               Diary.add_event(today, %{
+                 event_type: :other,
+                 started_at_time: ~T[19:45:00],
+                 ended_at_time: ~T[20:15:00]
+               })
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      html = render(view)
+
+      assert html =~ ~s(data-time-input)
+
+      refute html =~
+               ~r/<input[^>]*data-time-input[^>]*inputmode="numeric"|<input[^>]*inputmode="numeric"[^>]*data-time-input/
+    end
+
     test "renders empty editable day times as a set-now action", %{conn: conn} do
       {:ok, view, _html} =
         conn

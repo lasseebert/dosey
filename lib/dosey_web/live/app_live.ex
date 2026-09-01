@@ -313,7 +313,6 @@ defmodule DoseyWeb.AppLive do
             <input
               name="event[started_at_time]"
               type="text"
-              inputmode="numeric"
               placeholder="tt:mm"
               value={format_time_input(current_local_time())}
               data-time-input
@@ -323,7 +322,6 @@ defmodule DoseyWeb.AppLive do
             <input
               name="event[ended_at_time]"
               type="text"
-              inputmode="numeric"
               placeholder="tt:mm"
               data-time-input
               data-event-input
@@ -378,7 +376,6 @@ defmodule DoseyWeb.AppLive do
         <input
           name="event[started_at_time]"
           type="text"
-          inputmode="numeric"
           placeholder="tt:mm"
           value={format_time_input(@event.started_at_time)}
           data-time-input
@@ -388,7 +385,6 @@ defmodule DoseyWeb.AppLive do
         <input
           name="event[ended_at_time]"
           type="text"
-          inputmode="numeric"
           placeholder="tt:mm"
           value={format_time_input(@event.ended_at_time)}
           data-time-input
@@ -439,7 +435,6 @@ defmodule DoseyWeb.AppLive do
             id={@input_id}
             name={@name}
             type="text"
-            inputmode="numeric"
             value={format_time_input(@value)}
             data-time-input
             phx-blur={@phx_blur}
