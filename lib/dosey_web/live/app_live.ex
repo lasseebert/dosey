@@ -10,18 +10,19 @@ defmodule DoseyWeb.AppLive do
   @time_zone "Europe/Copenhagen"
 
   @impl true
-  def mount(_params, %{"user_id" => user_id}, socket) do
+  def mount(params, %{"user_id" => user_id}, socket) do
     case Accounts.get_user(user_id) do
       nil -> {:ok, redirect(socket, to: ~p"/login")}
-      _user -> mount_authenticated(socket)
+      _user -> mount_authenticated(socket, params)
     end
   end
 
   def mount(_params, _session, socket), do: {:ok, redirect(socket, to: ~p"/login")}
 
-  defp mount_authenticated(socket) do
+  defp mount_authenticated(socket, params) do
     today = today()
     yesterday = Date.add(today, -1)
+    window_end_date = window_end_date(params, today)
 
     with {:ok, _today} <- Diary.get_or_create_day(today),
          {:ok, _yesterday} <- Diary.get_or_create_day(yesterday) do
@@ -29,6 +30,7 @@ defmodule DoseyWeb.AppLive do
        socket
        |> assign(:today, today)
        |> assign(:yesterday, yesterday)
+       |> assign(:window_end_date, window_end_date)
        |> assign(:saved_at, nil)
        |> assign(:saved_status_ref, nil)
        |> assign(:error_message, nil)
@@ -39,6 +41,7 @@ defmodule DoseyWeb.AppLive do
          socket
          |> assign(:today, today)
          |> assign(:yesterday, yesterday)
+         |> assign(:window_end_date, window_end_date)
          |> assign(:days, [])
          |> assign(:saved_at, nil)
          |> assign(:saved_status_ref, nil)
@@ -202,9 +205,26 @@ defmodule DoseyWeb.AppLive do
         </header>
 
         <div class="mt-7">
-          <div>
-            <h1 class="text-3xl font-semibold tracking-normal text-[#102021]">Dagbog</h1>
-            <p class="mt-1 text-sm text-[#53635f]">Seneste syv dage</p>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 class="text-3xl font-semibold tracking-normal text-[#102021]">Dagbog</h1>
+              <p class="mt-1 text-sm text-[#53635f]">{day_window_label(@days)}</p>
+            </div>
+            <nav class="flex flex-wrap gap-2 text-sm font-medium">
+              <.link
+                href={~p"/app?#{[date: Date.to_iso8601(previous_window_date(@window_end_date))]}"}
+                class="rounded-md bg-[#f5f8f6] px-3 py-2 text-[#0b6f6b] hover:bg-[#eef3f1]"
+              >
+                Forrige 7 dage
+              </.link>
+              <.link
+                :if={next_window_date(@window_end_date, @today)}
+                href={~p"/app?#{[date: Date.to_iso8601(next_window_date(@window_end_date, @today))]}"}
+                class="rounded-md bg-[#f5f8f6] px-3 py-2 text-[#0b6f6b] hover:bg-[#eef3f1]"
+              >
+                Næste 7 dage
+              </.link>
+            </nav>
           </div>
         </div>
 
@@ -514,12 +534,12 @@ defmodule DoseyWeb.AppLive do
   defp day_time_popup_position_class(_field), do: "left-0"
 
   defp load_days(socket) do
-    today = socket.assigns.today
-    existing_days = Map.new(Diary.list_days(today, @day_count), &{&1.date, &1})
+    window_end_date = socket.assigns.window_end_date
+    existing_days = Map.new(Diary.list_days(window_end_date, @day_count), &{&1.date, &1})
 
     days =
       for offset <- 0..(@day_count - 1) do
-        date = Date.add(today, -offset)
+        date = Date.add(window_end_date, -offset)
         Map.get(existing_days, date, empty_day(date))
       end
 
@@ -532,6 +552,29 @@ defmodule DoseyWeb.AppLive do
 
   defp today do
     Application.get_env(:dosey, :today, &local_today/0).()
+  end
+
+  defp window_end_date(%{"date" => date_string}, today) do
+    case Date.from_iso8601(date_string) do
+      {:ok, date} -> earliest_date(date, today)
+      {:error, _reason} -> today
+    end
+  end
+
+  defp window_end_date(_params, today), do: today
+
+  defp previous_window_date(window_end_date), do: Date.add(window_end_date, -@day_count)
+
+  defp next_window_date(window_end_date, today) do
+    next_date = Date.add(window_end_date, @day_count)
+
+    if Date.compare(window_end_date, today) == :lt do
+      earliest_date(next_date, today)
+    end
+  end
+
+  defp earliest_date(date, other_date) do
+    if Date.compare(date, other_date) == :gt, do: other_date, else: date
   end
 
   defp local_today do
@@ -634,6 +677,13 @@ defmodule DoseyWeb.AppLive do
 
   defp day_title(date, today, _yesterday), do: format_day_header_date(date, today)
 
+  defp day_window_label([newest_day | _] = days) do
+    oldest_day = List.last(days)
+    "#{format_short_date(oldest_day.date)} - #{format_short_date(newest_day.date)}"
+  end
+
+  defp day_window_label([]), do: "7 dage"
+
   defp format_day_header_date(date, today) do
     "#{weekday_name(date)}, #{format_date(date, today)}"
   end
@@ -643,6 +693,10 @@ defmodule DoseyWeb.AppLive do
   end
 
   defp format_date(date, _today) do
+    "#{date.day}. #{month_name(date.month)} #{date.year}"
+  end
+
+  defp format_short_date(%Date{} = date) do
     "#{date.day}. #{month_name(date.month)} #{date.year}"
   end
 

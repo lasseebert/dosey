@@ -74,6 +74,34 @@ defmodule DoseyWeb.AppLiveTest do
       assert html =~ "data-day-date=\"2026-08-10\""
     end
 
+    test "links from the current seven days to the previous seven days", %{conn: conn} do
+      {:ok, _view, html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app")
+
+      assert html =~ ~s(href="/app?date=2026-08-09")
+      assert html =~ "Forrige 7 dage"
+      refute html =~ "Næste 7 dage"
+    end
+
+    test "shows a past seven-day window with previous and next navigation", %{conn: conn} do
+      {:ok, _view, html} =
+        conn
+        |> log_in_user()
+        |> live(~p"/app?date=2026-08-09")
+
+      assert html =~ "data-day-date=\"2026-08-09\""
+      assert html =~ "data-day-date=\"2026-08-03\""
+      refute html =~ "data-day-date=\"2026-08-16\""
+      refute html =~ "data-day-date=\"2026-08-10\""
+
+      assert html =~ ~s(href="/app?date=2026-08-02")
+      assert html =~ "Forrige 7 dage"
+      assert html =~ ~s(href="/app?date=2026-08-16")
+      assert html =~ "Næste 7 dage"
+    end
+
     test "renders day headers with weekday, date, and relative labels", %{conn: conn} do
       {:ok, _view, html} =
         conn
