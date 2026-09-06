@@ -148,6 +148,17 @@ defmodule DoseyWeb.AppLive do
     end
   end
 
+  def handle_event("set-event-end-time-now", %{"id" => id}, socket) do
+    event = find_event(socket.assigns.days, id)
+
+    with %Event{} = event <- event,
+         {:ok, _event} <- Diary.update_event(event, %{ended_at_time: current_local_time()}) do
+      {:noreply, socket |> mark_saved() |> load_days()}
+    else
+      _error -> {:noreply, assign(socket, :error_message, "Hændelsen kunne ikke gemmes.")}
+    end
+  end
+
   def handle_event("delete-event", %{"id" => id}, socket) do
     event = find_event(socket.assigns.days, id)
 
@@ -383,6 +394,7 @@ defmodule DoseyWeb.AppLive do
           class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
         />
         <input
+          :if={@event.ended_at_time}
           name="event[ended_at_time]"
           type="text"
           placeholder="tt:mm"
@@ -391,6 +403,16 @@ defmodule DoseyWeb.AppLive do
           data-event-input
           class="rounded-md border border-[#cbd8d2] px-3 py-2 text-sm"
         />
+        <button
+          :if={!@event.ended_at_time}
+          id={"event-#{@event.id}-ended_at_time-set-now"}
+          type="button"
+          phx-click="set-event-end-time-now"
+          phx-value-id={@event.id}
+          class="rounded-md bg-[#f5f8f6] px-3 py-2 text-left text-sm font-medium text-[#0b6f6b] hover:bg-[#eef3f1]"
+        >
+          Sæt sluttidspunkt nu
+        </button>
         <button
           id={"event-#{@event.id}-delete"}
           type="button"
