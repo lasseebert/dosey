@@ -9,22 +9,27 @@ unencrypted copy on the droplet or in a shared folder.
 
 ## 1. Find everything that is in use
 
-- [x] Record the shutdown date and tell the other parent when Dosey will become
-      read-only/unavailable.
-- [ ] In DigitalOcean, inventory all resources in the `dosey` project and all
-      resources tagged `dosey`, including anything created manually.
-- [ ] Confirm the expected Terraform-managed resources are present: the
+- [x] Shutdown date: 7 October 2026. The other parent has been notified when
+      Dosey will become read-only/unavailable.
+- [x] Inventoried all resources in the `dosey` project and all resources tagged
+      `dosey` in DigitalOcean on 7 October 2026.
+- [x] Confirmed in DigitalOcean on 7 October 2026: the expected
+      Terraform-managed resources are present—the
       `dosey` droplet, `dosey-postgres` managed PostgreSQL cluster, firewall,
       database firewall, SSH key, `dosey.dk` DNS zone, and its A, AAAA, and
       `www` CNAME records.
-- [ ] Check separately for resources not present in `terraform/main.tf`, such as
-      snapshots, backups, volumes, reserved IPs, load balancers, Spaces buckets,
-      monitoring/uptime checks, alerts, and additional DNS records.
-- [ ] Identify the registrar for `dosey.dk`, its renewal date, whether automatic
-      renewal is enabled, and whether the domain is used for anything besides
-      Dosey (especially email).
-- [ ] Review bank/card statements and email receipts for other Dosey-related
-      subscriptions or services not represented in this repository.
+- [x] Confirmed on 7 October 2026 that there are no additional resources outside
+      `terraform/main.tf`, such as snapshots, backups, volumes, reserved IPs,
+      load balancers, Spaces buckets, monitoring/uptime checks, alerts, or
+      additional DNS records.
+- [x] Registrar and billing provider identified: DNS Platform. Domain:
+      `dosey.dk`; registrant: `LSE94-DK`; created: 12 August 2026; expires:
+      12 August 2027.
+- [x] Treat automatic renewal as enabled unless DNS Platform confirms otherwise;
+      it must be explicitly disabled or cancelled during domain retirement.
+- [x] Confirmed that `dosey.dk` is not used for email or anything besides Dosey.
+- [x] Reviewed known services and payment records on 10 October 2026; no other
+      Dosey-related paid subscriptions or services were identified.
 
 ## 2. Make the final production export
 

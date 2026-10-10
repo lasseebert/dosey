@@ -41,6 +41,14 @@ defmodule Dosey.Diary do
     |> Repo.all()
   end
 
+  @spec list_all_days() :: [Day.t()]
+  def list_all_days do
+    Day
+    |> order_by([day], asc: day.date)
+    |> preload(events: ^events_query())
+    |> Repo.all()
+  end
+
   @spec update_day(Day.t(), map()) :: {:ok, Day.t()} | {:error, Changeset.t()}
   def update_day(%Day{} = day, attrs) when is_map(attrs) do
     day

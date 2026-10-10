@@ -43,6 +43,7 @@ defmodule DoseyWeb.Router do
   scope "/", DoseyWeb do
     pipe_through [:browser, :authenticated]
 
+    get "/export", DiaryExportController, :show
     live "/app", AppLive
   end
 
